@@ -1,0 +1,255 @@
+\documentclass{article}
+
+\usepackage{ctex}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{graphicx}
+\usepackage{setspace}
+\usepackage{amssymb}
+\usepackage{latexsym}
+\usepackage{amsthm, euscript, makeidx, color, mathrsfs}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=cyan,
+    citecolor=cyan
+}
+
+\usepackage{geometry}
+\geometry{
+	a4paper,
+	left=2.5cm,
+	right=2.5cm,
+	top = 3cm,
+	bottom = 2cm
+}
+
+\newtheorem {theorem}{Theorem}[section]
+\newtheorem {lemma}[theorem]{{\bf Lemma}}
+\newtheorem {corollary}[theorem]{{\bf Corollary}}
+\newtheorem {proposition}[theorem]{{\bf Proposition}}
+\theoremstyle{remark}
+\newtheorem {remark}{{\bf Remark}}[section]
+\newtheorem {conclusion}[remark]{Conclusion}
+\newtheorem {condition}{{\bf Condition}}[section]
+\theoremstyle{definition}
+\newtheorem {definition}{{\bf Definition}}[section]
+\newtheorem {example}{{\bf Example}}[section]
+\theoremstyle{plain}
+\numberwithin {equation}{section}
+\newtheorem{assumption}{Assumption}
+\numberwithin{assumption}{section}
+
+\allowdisplaybreaks
+
+\begin{document}
+
+\title{神经网络与深度学习课程大纲}
+\author{数据科学与大数据技术专业大三课程}
+\date{ }
+
+\maketitle
+
+
+\section*{课程名称}
+
+神经网络与深度学习
+
+\section*{适用对象}
+
+数据科学与大数据技术专业大三学生
+
+\section*{教材}
+
+邱锡鹏《神经网络与深度学习》
+
+\section*{课程目标}
+
+\begin{enumerate}
+    \item 理解神经网络和深度学习的基本概念、原理和应用。
+    \item 掌握常用的神经网络模型（如前馈神经网络、卷积神经网络、循环神经网络）及其优化方法。
+    \item 能够应用深度学习技术解决实际问题，如图像分类、自然语言处理等。
+    \item 了解深度学习的最新研究进展和前沿技术。
+\end{enumerate}
+
+\section*{课程大纲}
+
+\subsection*{第一部分：机器学习基础}
+
+\begin{enumerate}
+    \item 机器学习概述
+    \begin{itemize}
+        \item 概率论基础回顾
+        \item 机器学习核心定义与分类
+        \item 机器学习四要素（数据、模型、学习准则、优化算法）
+        \item 泛化与正则化
+    \end{itemize}
+\end{enumerate}
+
+\subsection*{第二部分：基础模型}
+
+\begin{enumerate}
+    \item 线性模型
+    \begin{itemize}
+        \item 线性回归模型
+        \item 分类问题、线性模型与损失函数
+        \item Logistic回归与Softmax回归
+        \item 感知器与支持向量机（SVM）
+    \end{itemize}
+    \item 前馈神经网络
+    \begin{itemize}
+        \item 神经网络概览与前馈计算结构
+        \item 激活函数
+        \item 反向传播算法
+        \item 神经网络的非凸优化与梯度下降问题
+    \end{itemize}
+    \item 卷积神经网络
+    \begin{itemize}
+        \item 卷积的定义与操作机理
+        \item 卷积神经网络结构组成与特征提取
+        \item 典型模型与应用（含图像与文本数据应用）
+    \end{itemize}
+    \item 循环神经网络
+    \begin{itemize}
+        \item 循环神经网络概念与原理 
+        \item 序列应用模式 
+        \item 参数学习（BPTT算法）与长程依赖问题（梯度爆炸与消失）
+    \end{itemize}
+\end{enumerate}
+
+\subsection*{第三部分：进阶模型}
+
+\begin{enumerate}
+    \item 网络优化与正则化
+    \begin{itemize}
+        \item 网络优化的特点分析
+        \item 优化算法的改进与网络参数初始化
+        \item 各类归一化方法与超参数优化策略
+        \item 泛化与正则化方法（Dropout、权重衰减等）
+    \end{itemize}
+    \item 注意力机制
+    \begin{itemize}
+        \item 注意力分配机制与原理
+        \item 人工神经网络的软性注意力、键值对注意力机制
+        \item 自注意力模型及其应用
+    \end{itemize}
+    \item 外部记忆
+    \begin{itemize}
+        \item 记忆网络与结构化的外部记忆计算（神经图灵机等）
+        \item 基于神经动力学的联想记忆（如Hopfield网络结构及其能量函数）
+    \end{itemize}
+    \item 无监督学习
+    \begin{itemize}
+        \item 聚类分析机理定性分析
+        \item 基于样本距离的代表性方法（K均值法、层次聚类）
+        \item 无监督特征学习
+    \end{itemize}
+	\item 生成模型 
+	\begin{itemize}
+		\item 生成模型概述与分类
+		\item 生成对抗网络（GAN）的原理与训练方法
+		\item 变分自编码器（VAE）的原理与应用
+		\item 扩散模型的原理与应用
+	\end{itemize}
+\end{enumerate}
+
+\subsection*{第四部分：大模型与前沿技术初探}
+
+\begin{enumerate}
+    \item Transformer 基础与大语言模型
+    \begin{itemize}
+        \item Transformer算法架构（Encoder与Decoder）
+        \item 现代预训练语言模型（BERT、GPT系列）
+        \item 生成式模型的结构细节分析与解码
+        \item 本地部署开源模型
+    \end{itemize}
+    \item 神经网络求解微分方程
+    \begin{itemize}
+        \item 物理信息神经网络（PINNs）基本原理
+        \item 神经网络求解常微分与偏微分方程
+        \item 算子学习网络（DeepONet/Neural Operator）简介
+    \end{itemize}
+    \item 强化学习初步
+    \begin{itemize}
+        \item 强化学习核心概念与马尔可夫决策过程（MDP）
+        \item 基于价值的方法（Q-Learning等）
+        \item 深度强化学习（DQN与策略梯度方法）
+    \end{itemize}
+        \item 现代AI工具与前沿应用
+        \begin{itemize}
+            \item 智能辅助编程工具（如 Trae）
+            \item 智能体（Agent）的概念与开发框架
+            \item 前沿对话模型及其生态（如 DeepSeek 等）
+        \end{itemize}
+	\end{enumerate}
+
+\section*{执行大纲}
+
+以下按周次排列：
+
+第9周劳动节，第16周端午节。
+
+\begin{enumerate}
+    \item 机器学习概述
+    \item 概率论基础回顾 
+    \item 线性回归模型
+    \item 线性分类模型
+    \item 前馈神经网络
+    \item 实验课：线性模型的实现与应用
+    \item 卷积神经网络
+    \item 循环神经网络
+    \item 实验课：前馈神经网络的实现与应用
+    \item 实验课：卷积神经网络的实现与应用
+    \item 实验课：循环神经网络的实现与应用
+    \item 网络优化与正则化
+    \item 注意力机制
+    \item 大语言模型
+    \item 实验课：网络优化与正则化方法的实现与应用
+    \item 实验课：注意力机制的实现与应用
+    \item 复习课
+\end{enumerate}
+	
+\section*{教学方法}
+
+\begin{enumerate}
+    \item 理论讲解：通过课堂讲授，深入讲解神经网络和深度学习的核心概念、模型和算法。
+    \item 实践操作：结合编程练习和实验，使用Python和深度学习框架（PyTorch）实现经典模型。
+    \item 项目驱动：通过小组项目，学生可以选择一个实际应用问题进行深度学习模型的开发与优化。
+    \item 论文阅读：引导学生阅读深度学习领域的经典论文和最新研究进展，培养科研能力。
+\end{enumerate}
+
+\section*{考核方式}
+
+\begin{enumerate}
+    \item 平时作业：包括编程练习和理论题目，占总成绩的30\%。
+    \item 项目报告：考查学生建模并解决问题的能力，占总成绩的20\%。
+    \item 期末考试：考察基础知识、基础模型、理论与应用的知识点50\%。
+\end{enumerate}
+
+\section*{参考资源}
+
+\begin{enumerate}
+    \item 教材：邱锡鹏《神经网络与深度学习》
+    \item 在线课程：
+    \begin{itemize}
+        \item 邱锡鹏主讲线上课程：
+        \item 斯坦福大学CS231n（计算机视觉中的深度学习）
+        \item 斯坦福大学CS224n（自然语言处理中的深度学习）
+    \end{itemize}
+    \item 深度学习框架：
+    \begin{itemize}
+        \item 神经网络与深度学习课程资源: https://nndl.github.io/
+        \item 《动手学深度学习》（李沐）：https://zh-v2.d2l.ai/
+        \item PyTorch: http://pytorch.org
+    \end{itemize}
+    \item 学术会议：
+    \begin{itemize}
+        \item ICLR（国际表示学习会议）
+        \item NeurIPS（神经信息处理系统年会）
+        \item ICML（国际机器学习会议）
+    \end{itemize}
+\end{enumerate}
+
+\end{document}
