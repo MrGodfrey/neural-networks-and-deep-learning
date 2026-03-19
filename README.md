@@ -51,7 +51,7 @@
 1. **Fork 本仓库**：点击本页面右上角的 `Fork` 按钮，将本仓库复制到你的个人 GitHub 账号下。
 2. **克隆到本地**：
    ```bash
-   git clone https://github.com/你的用户名/neural-networks-and-deep-learning.git
+   git clone https://github.com/MrGodfrey/neural-networks-and-deep-learning
    cd neural-networks-and-deep-learning
    ```
 3. **创建分支**：建议基于你要修改的内容创建一个带有描述性名称的新分支。
