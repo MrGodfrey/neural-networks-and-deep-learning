@@ -2,6 +2,10 @@
 
 欢迎来到**数据科学与大数据技术专业**大三核心课程《神经网络与深度学习》的开源代码与讲义仓库。本仓库旨在为选修该课程的同学们提供一站式的学习资源，同时也欢迎任何对深度学习感兴趣的朋友学习和贡献。
 
+**仓库地址：**
+- **GitHub (国外)**: [https://github.com/MrGodfrey/neural-networks-and-deep-learning](https://github.com/MrGodfrey/neural-networks-and-deep-learning)
+- **Gitee (国内)**: [https://gitee.com/lvqiscu/neural-networks-and-deep-learning](https://gitee.com/lvqiscu/neural-networks-and-deep-learning)
+
 ## 📖 课程简介
 
 本课程以邱锡鹏教授的《神经网络与深度学习》为主要教材，分为四个主要部分：
@@ -38,6 +42,9 @@
 ## 🤝 参与贡献 (Pull Request 指南)
 
 这份课程资料不仅供大家学习，也是一个协作构建的项目。如果同学们在阅读讲义时发现了错别字、推导错误，或者在实验代码中发现了 Bug、想补充更好的代码注释及实战实现，非常欢迎你们提交 Pull Request (PR) 做出贡献！
+
+> **⚠️ 重要说明：**
+> **本项目的 Gitee 仓库仅作为国内镜像供大家快速访问。我们目前只接受在 GitHub 上提交的 Pull Request 进行代码和文档的合并协作。**
 
 **参与贡献的步骤如下：**
 
