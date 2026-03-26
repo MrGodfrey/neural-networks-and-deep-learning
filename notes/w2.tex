@@ -58,58 +58,58 @@
 \begin{enumerate}
   \item 基本概念
     \begin{itemize}
-      \item 概率空间：由样本空间、事件域及概率公理构成的理论框架，用于描述随机现象。
+      \item 概率空间: 由样本空间、事件域及概率公理构成的理论框架, 用于描述随机现象. 
         \begin{itemize}
-          \item 样本空间（$\Omega$）：随机试验所有可能结果的集合。
-          \item 样本点（$\omega$）：样本空间中的一个基本元素，即试验的一个具体结果。
-          \item 事件（$A$）：样本空间的子集，是实验结果的某些集合。
-          \item 事件域（$\mathcal{F}$）：样本空间的子集构成的集合族，满足 $\sigma$-代数的性质。
-          \item 概率（$P$）：将事件映射到 $[0,1]$ 区间的函数，满足非负性、规范性和可列可加性公理。
-          \item 概率分布：描述随机变量取值及其概率的函数，分为离散分布和连续分布。
-          \item 概率质量函数（PMF）：针对离散型随机变量，描述随机变量取特定某个值的概率 $P(X = x)$。
-          \item 概率密度函数（PDF）：针对连续型随机变量，其分布函数的导数 $f(x)$，描述在某点附近取值的概率密度。
-          \item 概率分布函数（CDF）：$F(x) = P(X \le x)$，描述随机变量取值小于等于 $x$ 的累积概率。
+          \item 样本空间($\Omega$): 随机试验所有可能结果的集合. 
+          \item 样本点($\omega$): 样本空间中的一个基本元素, 即试验的一个具体结果. 
+          \item 事件($A$): 样本空间的子集, 是实验结果的某些集合. 
+          \item 事件域($\mathcal{F}$): 样本空间的子集构成的集合族, 满足 $\sigma$-代数的性质. 
+          \item 概率($P$): 将事件映射到 $[0,1]$ 区间的函数, 满足非负性、规范性和可列可加性公理. 
+          \item 概率分布: 描述随机变量取值及其概率的函数, 分为离散分布和连续分布. 
+          \item 概率质量函数(PMF): 针对离散型随机变量, 描述随机变量取特定某个值的概率 $P(X = x)$. 
+          \item 概率密度函数(PDF): 针对连续型随机变量, 其分布函数的导数 $f(x)$, 描述在某点附近取值的概率密度. 
+          \item 概率分布函数(CDF): $F(x) = P(X \le x)$, 描述随机变量取值小于等于 $x$ 的累积概率. 
         \end{itemize}
-      \item 随机变量分类：
+      \item 随机变量分类: 
         \begin{itemize}
-          \item 离散型随机变量：取有限或可数值（如伯努利分布、二项分布），常用于计数问题。
-          \item 连续型随机变量：取无限多个值（如高斯分布、均匀分布），常用于测量问题。
+          \item 离散型随机变量: 取有限或可数值(如伯努利分布、二项分布), 常用于计数问题. 
+          \item 连续型随机变量: 取无限多个值(如高斯分布、均匀分布), 常用于测量问题. 
         \end{itemize}
-      \item 随机向量：
+      \item 随机向量: 
         \begin{itemize}
-          \item 随机向量：由多个随机变量构成的向量形式 $\mathbf{X} = (X_1, X_2, \dots, X_n)$，用于描述多维随机现象。
-          \item 联合分布函数：$F(x_1, \dots, x_n) = P(X_1 \le x_1, \dots, X_n \le x_n)$，描述多维随机变量联合取值的概率。
-          \item 联合概率密度函数：对应于连续型随机向量，描述多维空间中某点附近的联合概率密度。
+          \item 随机向量: 由多个随机变量构成的向量形式 $\mathbf{X} = (X_1, X_2, \dots, X_n)$, 用于描述多维随机现象. 
+          \item 联合分布函数: $F(x_1, \dots, x_n) = P(X_1 \le x_1, \dots, X_n \le x_n)$, 描述多维随机变量联合取值的概率. 
+          \item 联合概率密度函数: 对应于连续型随机向量, 描述多维空间中某点附近的联合概率密度. 
         \end{itemize}
-      \item 条件概率与边际分布：
+      \item 条件概率与边际分布: 
         \begin{itemize}
-          \item 边际分布：通过对联合分布中的部分变量求和或积分得到的单变量分布。
-          \item 条件概率：在已知某事件发生的条件下，另一个事件发生的概率。
-          \item 贝叶斯公式：$P(A|B) = \frac{P(B|A)P(A)}{P(B)}$，用于根据先验概率和数据的新信息计算后验概率。
-          \item 随机变量的独立性：若两随机变量的联合分布等于其边缘分布的乘积，则称二者相互独立。
+          \item 边际分布: 通过对联合分布中的部分变量求和或积分得到的单变量分布. 
+          \item 条件概率: 在已知某事件发生的条件下, 另一个事件发生的概率. 
+          \item 贝叶斯公式: $P(A|B) = \frac{P(B|A)P(A)}{P(B)}$, 用于根据先验概率和数据的新信息计算后验概率. 
+          \item 随机变量的独立性: 若两随机变量的联合分布等于其边缘分布的乘积, 则称二者相互独立. 
         \end{itemize}
     \end{itemize}
   \item 采样与分析工具
     \begin{itemize}
-      \item 采样方法：
+      \item 采样方法: 
         \begin{itemize}
-          \item 直接采样：从已知分布中直接生成样本。
-          \item 逆变换采样：利用均匀分布和分布函数的反函数生成特定分布样本。
+          \item 直接采样: 从已知分布中直接生成样本. 
+          \item 逆变换采样: 利用均匀分布和分布函数的反函数生成特定分布样本. 
         \end{itemize}
-      \item 期望与大数定律：
+      \item 期望与大数定律: 
         \begin{itemize}
-          \item 期望：随机变量取值的加权平均，反映长期平均水平。
-          \item 大数定律：样本均值随着样本量增加趋近于期望。
+          \item 期望: 随机变量取值的加权平均, 反映长期平均水平. 
+          \item 大数定律: 样本均值随着样本量增加趋近于期望. 
         \end{itemize}
     \end{itemize}
 \end{enumerate}
 
-\textbf{问题思考}：
+\textbf{问题思考}: 
 
 \begin{itemize}
-  \item 什么是概率空间？请举例说明。
-  \item 已知一个二维随机向量的边缘分布，能否知道它的联合分布？
-  \item 如何理解大数定律在实际中的意义？
+  \item 什么是概率空间? 请举例说明. 
+  \item 已知一个二维随机向量的边缘分布, 能否知道它的联合分布? 
+  \item 如何理解大数定律在实际中的意义? 
 \end{itemize}
 
 
@@ -118,8 +118,8 @@
 \begin{enumerate}
     \item \textbf{模型表示}
     \begin{itemize}
-        \item 线性回归模型通过特征的加权组合（含偏置项的增广向量形式）来预测输出。
-        \item 主要用于连续值预测任务，如房价预测、温度预测等。
+        \item 线性回归模型通过特征的加权组合(含偏置项的增广向量形式)来预测输出. 
+        \item 主要用于连续值预测任务, 如房价预测、温度预测等. 
     \end{itemize}
 \end{enumerate}
 
@@ -128,46 +128,50 @@
 \begin{enumerate}
     \item \textbf{经验风险最小化}
     \begin{itemize}
-        \item 在线性回归中，模型的学习准则通常是最小化平方损失函数（即 $\ell_2$ 损失函数）。对应的经验风险定义为：
+        \item 在线性回归中, 模型的学习准则通常是最小化平方损失函数(即 $\ell_2$ 损失函数). 对应的经验风险定义为: 
         \begin{align*}
         \mathcal{R}(\boldsymbol{w}) & =\sum_{n=1}^N \mathcal{L}\left(y^{(n)}, f\left(\boldsymbol{x}^{(n)} ; \boldsymbol{w}\right)\right) \\
         & =\frac{1}{2} \sum_{n=1}^N\left(y^{(n)}-\boldsymbol{w}^{\top} \boldsymbol{x}^{(n)}\right)^2 
         \end{align*}
         
-        \item \textbf{如何将求和形式转写成向量（矩阵）乘积的形式}：
+        \item \textbf{如何将求和形式转写成向量(矩阵)乘积的形式}: 
         \begin{itemize}
-            \item \textbf{第一步：定义矩阵和向量}。我们将所有的目标值排成一个 $N$ 维列向量 $\boldsymbol{y} = \left[y^{(1)}, y^{(2)}, \cdots, y^{(N)}\right]^{\top}$。由于每个样本的特征 $\boldsymbol{x}^{(n)}$ 通常也是一个列维度（如 $M$ 维）的向量，我们将所有的特征向量按列连续拼接，形成特征矩阵 $\boldsymbol{X} = \left[\boldsymbol{x}^{(1)}, \boldsymbol{x}^{(2)}, \cdots, \boldsymbol{x}^{(N)}\right]$。
-            \item \textbf{第二步：利用内积的转置性质}。注意到模型单个样本的输出预测值 $\boldsymbol{w}^{\top} \boldsymbol{x}^{(n)}$ 是一个标量。标量的转置等于它本身，因此我们可以进行如下等价变形：
+            \item \textbf{第一步: 定义矩阵和向量}. 我们将所有的目标值排成一个 $N$ 维列向量. 
+            \begin{align*}
+                \boldsymbol{y} = \left[y^{(1)}, y^{(2)}, \cdots, y^{(N)}\right]^{\top}    
+            \end{align*}
+            由于每个样本的特征 $\boldsymbol{x}^{(n)}$ 通常也是一个列维度(如 $M$ 维)的向量, 我们将所有的特征向量按列连续拼接, 形成特征矩阵 $\boldsymbol{X} = \left[\boldsymbol{x}^{(1)}, \boldsymbol{x}^{(2)}, \cdots, \boldsymbol{x}^{(N)}\right]$. 
+            \item \textbf{第二步: 利用内积的转置性质}. 注意到模型单个样本的输出预测值 $\boldsymbol{w}^{\top} \boldsymbol{x}^{(n)}$ 是一个标量. 标量的转置等于它本身, 因此我们可以进行如下等价变形: 
             \begin{equation*}
                 \boldsymbol{w}^{\top} \boldsymbol{x}^{(n)} = \left(\boldsymbol{w}^{\top} \boldsymbol{x}^{(n)}\right)^{\top} = \left(\boldsymbol{x}^{(n)}\right)^{\top} \boldsymbol{w}
             \end{equation*}
-            \item \textbf{第三步：组合成预测向量}。我们将所有 $N$ 个样本的标量预测值自上而下排成一个列向量，再利用分块矩阵乘法可以写成：
+            \item \textbf{第三步: 组合成预测向量}. 我们将所有 $N$ 个样本的标量预测值自上而下排成一个列向量, 再利用分块矩阵乘法可以写成: 
             \begin{equation*}
                 \hat{\boldsymbol{y}} = \begin{bmatrix} \left(\boldsymbol{x}^{(1)}\right)^{\top} \boldsymbol{w} \\ \left(\boldsymbol{x}^{(2)}\right)^{\top} \boldsymbol{w} \\ \vdots \\ \left(\boldsymbol{x}^{(N)}\right)^{\top} \boldsymbol{w} \end{bmatrix} = \begin{bmatrix} \left(\boldsymbol{x}^{(1)}\right)^{\top} \\ \left(\boldsymbol{x}^{(2)}\right)^{\top} \\ \vdots \\ \left(\boldsymbol{x}^{(N)}\right)^{\top} \end{bmatrix} \boldsymbol{w} = \boldsymbol{X}^{\top} \boldsymbol{w}
             \end{equation*}
-            这样，$\boldsymbol{X}^{\top} \boldsymbol{w}$ 就表示了包含了所有样本预测结果的 $N$ 维列向量。
-            \item \textbf{第四步：向范数形式转换}。原风险公式的求和实际是所有真实值与预测值差值的平方和。我们可以将整体差值定义为误差向量 $\boldsymbol{e} = \boldsymbol{y} - \boldsymbol{X}^{\top} \boldsymbol{w}$。由于各项平方之和正是对应列向量与其自身的内积（即 $\ell_2$ 范数的平方）：
+            这样, $\boldsymbol{X}^{\top} \boldsymbol{w}$ 就表示了包含了所有样本预测结果的 $N$ 维列向量. 
+            \item \textbf{第四步: 向范数形式转换}. 原风险公式的求和实际是所有真实值与预测值差值的平方和. 我们可以将整体差值定义为误差向量 $\boldsymbol{e} = \boldsymbol{y} - \boldsymbol{X}^{\top} \boldsymbol{w}$. 由于各项平方之和正是对应列向量与其自身的内积(即 $\ell_2$ 范数的平方): 
             \begin{equation*}
                 \sum_{n=1}^N\left(y^{(n)}-\boldsymbol{w}^{\top} \boldsymbol{x}^{(n)}\right)^2 = \sum_{n=1}^N e_n^2 = \boldsymbol{e}^{\top}\boldsymbol{e} = \|\boldsymbol{e}\|^2
             \end{equation*}
         \end{itemize}
-        经过上述详细拆解转换，经验风险就可以等价地表示为紧凑优美的矩阵范数形式：
+        经过上述详细拆解转换, 经验风险就可以等价地表示为紧凑优美的矩阵范数形式: 
         \begin{equation*}
         \mathcal{R}(\boldsymbol{w}) =\frac{1}{2}\left\|\boldsymbol{y}-\boldsymbol{X}^{\top} \boldsymbol{w}\right\|^2
         \end{equation*}
 
-        \item \textbf{补充：矩阵微积分基础}。多元函数的复合求导需要非常严谨，同学们可以先回忆一下在多元微积分中，多变量函数的复合导数是如何通过偏导数求和链式法则计算的。在机器学习中，为了推导导致经验风险最小化的最优参数 $\boldsymbol{w}^*$，我们使用矩阵微积分将这些求和项写成优雅的矩阵和向量形式。
+        \item \textbf{补充: 矩阵微积分基础}. 多元函数的复合求导需要非常严谨, 同学们可以先回忆一下在多元微积分中, 多变量函数的复合导数是如何通过偏导数求和链式法则计算的. 在机器学习中, 为了推导导致经验风险最小化的最优参数 $\boldsymbol{w}^*$, 我们使用矩阵微积分将这些求和项写成优雅的矩阵和向量形式. 
 
         \begin{itemize}
-            \item \textbf{下标表示法与乘法求和记号}：
-            我们常用下标法表示矩阵的元素，例如 $\boldsymbol{A} = (a_{ij})$。利用求和记号，我们可以定义：
+            \item \textbf{下标表示法与乘法求和记号}: 
+            我们常用下标法表示矩阵的元素, 例如 $\boldsymbol{A} = (a_{ij})$. 利用求和记号, 我们可以定义: 
             \begin{itemize}
-                \item 矩阵与向量的乘法 $\boldsymbol{y} = \boldsymbol{A}\boldsymbol{x}$，其第 $i$ 个分量表示为 $y_i = \sum_{k} a_{ik} x_k$。
-                \item 矩阵与矩阵的乘法 $\boldsymbol{C} = \boldsymbol{A}\boldsymbol{B}$，其第 $(i, j)$ 个元素表示为 $c_{ij} = \sum_{k} a_{ik} b_{kj}$。
+                \item 矩阵与向量的乘法 $\boldsymbol{y} = \boldsymbol{A}\boldsymbol{x}$, 其第 $i$ 个分量表示为 $y_i = \sum_{k} a_{ik} x_k$. 
+                \item 矩阵与矩阵的乘法 $\boldsymbol{C} = \boldsymbol{A}\boldsymbol{B}$, 其第 $(i, j)$ 个元素表示为 $c_{ij} = \sum_{k} a_{ik} b_{kj}$. 
             \end{itemize}
 
-            \item \textbf{偏导数的定义}：
-            对于向量函数 $\boldsymbol{y}=f(\boldsymbol{x}) \in \mathbb{R}^N$，其中 $\boldsymbol{x} \in \mathbb{R}^M$。我们采用分母布局来定义向量关于向量的偏导数矩阵，其第 $(i, j)$ 个元素定义为 $\left(\frac{\partial \boldsymbol{y}}{\partial \boldsymbol{x}}\right)_{ij} = \frac{\partial y_j}{\partial x_i}$。此时雅可比矩阵为：
+            \item \textbf{偏导数的定义}: 
+            对于向量函数 $\boldsymbol{y}=f(\boldsymbol{x}) \in \mathbb{R}^N$, 其中 $\boldsymbol{x} \in \mathbb{R}^M$. 我们采用分母布局来定义向量关于向量的偏导数矩阵, 其第 $(i, j)$ 个元素定义为 $\left(\frac{\partial \boldsymbol{y}}{\partial \boldsymbol{x}}\right)_{ij} = \frac{\partial y_j}{\partial x_i}$. 此时雅可比矩阵为: 
             \begin{align*}
             \frac{\partial \boldsymbol{y}}{\partial \boldsymbol{x}} = \left[\begin{array}{ccc}
             \frac{\partial y_1}{\partial x_1} & \cdots & \frac{\partial y_N}{\partial x_1} \\
@@ -175,22 +179,22 @@
             \frac{\partial y_1}{\partial x_M} & \cdots & \frac{\partial y_N}{\partial x_M}
             \end{array}\right] \in \mathbb{R}^{M \times N}
             \end{align*}
-            当目标退化为标量 $y$ 时（即 $N=1$），标量关于向量的偏导数为列向量：$\frac{\partial y}{\partial \boldsymbol{x}}=\left[\frac{\partial y}{\partial x_1}, \cdots, \frac{\partial y}{\partial x_M}\right]^{\top}$。
+            当目标退化为标量 $y$ 时(即 $N=1$), 标量关于向量的偏导数为列向量: $\frac{\partial y}{\partial \boldsymbol{x}}=\left[\frac{\partial y}{\partial x_1}, \cdots, \frac{\partial y}{\partial x_M}\right]^{\top}$. 
 
-            \item \textbf{简单导数的推导}：
+            \item \textbf{简单导数的推导}: 
             \begin{itemize}
-                \item 第一基本求导：显然 $\frac{\partial \boldsymbol{x}}{\partial \boldsymbol{x}}=\boldsymbol{I}$。
-                \item 考虑 $\boldsymbol{y} = \boldsymbol{A}\boldsymbol{x}$，由 $y_j = \sum_{k} a_{jk} x_k$ 可知 $\frac{\partial y_j}{\partial x_i} = a_{ji}$。因此矩阵的 $(i, j)$ 元素即为 $\boldsymbol{A}$ 的转置的 $(i, j)$ 元素，故 $\frac{\partial \boldsymbol{A} \boldsymbol{x}}{\partial \boldsymbol{x}}=\boldsymbol{A}^{\top}$。
-                \item 同理推导可知：$\frac{\partial \boldsymbol{x}^{\top} \boldsymbol{A}}{\partial \boldsymbol{x}}=\boldsymbol{A}$。
+                \item 第一基本求导: 显然 $\frac{\partial \boldsymbol{x}}{\partial \boldsymbol{x}}=\boldsymbol{I}$. 
+                \item 考虑 $\boldsymbol{y} = \boldsymbol{A}\boldsymbol{x}$, 由 $y_j = \sum_{k} a_{jk} x_k$ 可知 $\frac{\partial y_j}{\partial x_i} = a_{ji}$. 因此矩阵的 $(i, j)$ 元素即为 $\boldsymbol{A}$ 的转置的 $(i, j)$ 元素, 故 $\frac{\partial \boldsymbol{A} \boldsymbol{x}}{\partial \boldsymbol{x}}=\boldsymbol{A}^{\top}$. 
+                \item 同理推导可知: $\frac{\partial \boldsymbol{x}^{\top} \boldsymbol{A}}{\partial \boldsymbol{x}}=\boldsymbol{A}$. 
             \end{itemize}
 
-            \item \textbf{链式法则}：
-            设 $\boldsymbol{x} \in \mathbb{R}^M, \boldsymbol{y}=g(\boldsymbol{x}) \in \mathbb{R}^K, \boldsymbol{z}=f(\boldsymbol{y}) \in \mathbb{R}^N$。根据多元微积分的求导法则，有 $\frac{\partial z_j}{\partial x_i} = \sum_{k} \frac{\partial y_k}{\partial x_i} \frac{\partial z_j}{\partial y_k} = \sum_{k} \left(\frac{\partial \boldsymbol{y}}{\partial \boldsymbol{x}}\right)_{ik} \left(\frac{\partial \boldsymbol{z}}{\partial \boldsymbol{y}}\right)_{kj}$。结合矩阵乘法的定义，这恰好是两个导数矩阵的乘积：
+            \item \textbf{链式法则}: 
+            设 $\boldsymbol{x} \in \mathbb{R}^M, \boldsymbol{y}=g(\boldsymbol{x}) \in \mathbb{R}^K, \boldsymbol{z}=f(\boldsymbol{y}) \in \mathbb{R}^N$. 根据多元微积分的求导法则, 有 $\frac{\partial z_j}{\partial x_i} = \sum_{k} \frac{\partial y_k}{\partial x_i} \frac{\partial z_j}{\partial y_k} = \sum_{k} \left(\frac{\partial \boldsymbol{y}}{\partial \boldsymbol{x}}\right)_{ik} \left(\frac{\partial \boldsymbol{z}}{\partial \boldsymbol{y}}\right)_{kj}$. 结合矩阵乘法的定义, 这恰好是两个导数矩阵的乘积: 
             \begin{align*}
             \frac{\partial \boldsymbol{z}}{\partial \boldsymbol{x}}=\frac{\partial \boldsymbol{y}}{\partial \boldsymbol{x}} \frac{\partial \boldsymbol{z}}{\partial \boldsymbol{y}} \quad \in \mathbb{R}^{M \times N} 
             \end{align*}
         \end{itemize}
-        利用矩阵微积分对 $\mathcal{R}(\boldsymbol{w})$ 关于 $\boldsymbol{w}$ 求导并令导数为零，我们即可得到经验风险最小化下最优参数的解析表达式：
+        利用矩阵微积分对 $\mathcal{R}(\boldsymbol{w})$ 关于 $\boldsymbol{w}$ 求导并令导数为零, 我们即可得到经验风险最小化下最优参数的解析表达式: 
         \begin{equation*}
         \boldsymbol{w}^*=\left(\boldsymbol{X} \boldsymbol{X}^{\top}\right)^{-1} \boldsymbol{X} \boldsymbol{y}
         \end{equation*}
@@ -198,59 +202,59 @@
 
     \item \textbf{结构风险最小化}
     \begin{itemize}
-        \item 实际问题中，样本特征之间往往存在共线性（即特征高度相关），这会导致经验风险最小化求解公式中的矩阵 $\boldsymbol{X} \boldsymbol{X}^{\top}$ 是不可逆的（或条件数很大），从而无法求得稳定的解析解。
+        \item 实际问题中, 样本特征之间往往存在共线性(即特征高度相关), 这会导致经验风险最小化求解公式中的矩阵 $\boldsymbol{X} \boldsymbol{X}^{\top}$ 是不可逆的(或条件数很大), 从而无法求得稳定的解析解. 
         
-        \item 为了解决这一问题，我们引入\textbf{结构风险最小化}。具体做法是在经验风险的基础上引入正则化项，例如加入 $\frac{\lambda}{2}\|\boldsymbol{w}\|^2$ 这样的惩罚项（即岭回归 / L2 正则化）：
+        \item 为了解决这一问题, 我们引入\textbf{结构风险最小化}. 具体做法是在经验风险的基础上引入正则化项, 例如加入 $\frac{\lambda}{2}\|\boldsymbol{w}\|^2$ 这样的惩罚项(即岭回归 / L2 正则化): 
         \begin{equation*}
         \mathcal{R}_{srm}(\boldsymbol{w}) = \frac{1}{2}\left\|\boldsymbol{y}-\boldsymbol{X}^{\top} \boldsymbol{w}\right\|^2 + \frac{\lambda}{2}\|\boldsymbol{w}\|^2
         \end{equation*}
         
-        \item \textbf{加入 $\lambda\|\boldsymbol{w}\|^2$ 的两个主要作用}：
+        \item \textbf{加入 $\lambda\|\boldsymbol{w}\|^2$ 的两个主要作用}: 
         \begin{itemize}
-            \item 在数学计算上，它使得需要求逆的矩阵变为 $(\boldsymbol{X}\boldsymbol{X}^{\top} + \lambda \boldsymbol{I})$，保证了矩阵的可逆性和数值稳定性。
-            \item 在机器学习理论上，它限制了参数空间的复杂度，缓解特征共线性带来的问题，从而有效防止模型过拟合。
+            \item 在数学计算上, 它使得需要求逆的矩阵变为 $(\boldsymbol{X}\boldsymbol{X}^{\top} + \lambda \boldsymbol{I})$, 保证了矩阵的可逆性和数值稳定性. 
+            \item 在机器学习理论上, 它限制了参数空间的复杂度, 缓解特征共线性带来的问题, 从而有效防止模型过拟合. 
         \end{itemize}
     \end{itemize}
 \end{enumerate}
 
 
 
-\textbf{问题思考}：
+\textbf{问题思考}: 
 \begin{itemize}
-    \item 为什么线性回归模型需要引入正则化？
-    \item 线性回归的概率解释与最小二乘法有何联系？
+    \item 为什么线性回归模型需要引入正则化? 
+    \item 线性回归的概率解释与最小二乘法有何联系? 
 \end{itemize}
     
 
 % ===================== 概率视角解释 =====================
 \section{概率视角解释}
 
-在详细讨论线性回归的概率解释之前，我们需要先明确机器学习中的两种基本建模思路：
+在详细讨论线性回归的概率解释之前, 我们需要先明确机器学习中的两种基本建模思路: 
 \begin{itemize}
-    \item \textbf{函数关系建模}：旨在寻求一个未知的判别函数 $f(\boldsymbol{x}; \boldsymbol{w})$，通过最小化模型输出与真实观测标签之间的误差进行学习（如经验风险最小化）。
-    \item \textbf{条件概率建模}：旨在学习某种条件概率分布 $P(y|\boldsymbol{x}; \boldsymbol{w})$。它假设数据生成过程遵循某种概率模型，然后通过统计推断估计给定输入时相应输出出现的概率规律。
+    \item \textbf{函数关系建模}: 旨在寻求一个未知的判别函数 $f(\boldsymbol{x}; \boldsymbol{w})$, 通过最小化模型输出与真实观测标签之间的误差进行学习(如经验风险最小化). 
+    \item \textbf{条件概率建模}: 旨在学习某种条件概率分布 $P(y|\boldsymbol{x}; \boldsymbol{w})$. 它假设数据生成过程遵循某种概率模型, 然后通过统计推断估计给定输入时相应输出出现的概率规律. 
 \end{itemize}
 
-基于条件概率建模的视角，我们可以更为深刻地理解线性回归：
+基于条件概率建模的视角, 我们可以更为深刻地理解线性回归: 
 \begin{enumerate}
     \item \textbf{基础定义与似然函数}
     \begin{itemize}
-        \item \textbf{假设条件}：假设目标标签 $y$ 在给定输入变量 $\boldsymbol{x}$ 和参数 $\boldsymbol{w}$ 时，由于受到高斯噪声的干扰，其输出服从高斯分布，即 $y \sim \mathcal{N}(\boldsymbol{w}^\top \boldsymbol{x}, \sigma^2)$。
-        \item \textbf{概率与似然的区别}：“概率”表示在\textbf{已知模型参数}的前提下，不同观测结果和数据出现的可能性；而“似然函数” $L(\boldsymbol{w})$ 则是将\textbf{观测数据}固定，将其看作未知参数 $\boldsymbol{w}$ 的函数，反映了特定参数取值下“生成”这些观测数据的可能性有多大。
-        \item \textbf{具体形式}：对于 $N$ 个独立同分布的独立样本 $\boldsymbol{X}$ 和对应的目标值 $\boldsymbol{y}$，其对应的似然函数表达式呈现为一系列一维高斯概率密度函数的乘积：
+        \item \textbf{假设条件}: 假设目标标签 $y$ 在给定输入变量 $\boldsymbol{x}$ 和参数 $\boldsymbol{w}$ 时, 由于受到高斯噪声的干扰, 其输出服从高斯分布, 即 $y \sim \mathcal{N}(\boldsymbol{w}^\top \boldsymbol{x}, \sigma^2)$. 
+        \item \textbf{概率与似然的区别}: “概率”表示在\textbf{已知模型参数}的前提下, 不同观测结果和数据出现的可能性; 而“似然函数” $L(\boldsymbol{w})$ 则是将\textbf{观测数据}固定, 将其看作未知参数 $\boldsymbol{w}$ 的函数, 反映了特定参数取值下“生成”这些观测数据的可能性有多大. 
+        \item \textbf{具体形式}: 对于 $N$ 个独立同分布的独立样本 $\boldsymbol{X}$ 和对应的目标值 $\boldsymbol{y}$, 其对应的似然函数表达式呈现为一系列一维高斯概率密度函数的乘积: 
         \begin{equation*}
         L(\boldsymbol{w}) = \prod_{n=1}^N \frac{1}{\sqrt{2\pi}\sigma} \exp\left(-\frac{(y^{(n)} - \boldsymbol{w}^\top \boldsymbol{x}^{(n)})^2}{2\sigma^2}\right)
         \end{equation*}
     \end{itemize}
 
-    \item \textbf{最大似然估计（MLE）}
+    \item \textbf{最大似然估计(MLE)}
     \begin{itemize}
-        \item \textbf{核心思想}：从模型概率视角出发，求解最大似然估计就是去寻找使对数似然函数最大的参数 $\boldsymbol{w}^*_{MLE}$。
-        \item \textbf{与经验风险等价性}：由于指数函数的单调性，最大化上述对数似然等价于最小化指数项中的平方和部分（即负对数似然）：
+        \item \textbf{核心思想}: 从模型概率视角出发, 求解最大似然估计就是去寻找使对数似然函数最大的参数 $\boldsymbol{w}^*_{MLE}$. 
+        \item \textbf{与经验风险等价性}: 由于指数函数的单调性, 最大化上述对数似然等价于最小化指数项中的平方和部分(即负对数似然): 
         \begin{equation*}
         -\ln L(\boldsymbol{w}) \propto \frac{1}{2\sigma^2} \sum_{n=1}^N \left(y^{(n)} - \boldsymbol{w}^\top \boldsymbol{x}^{(n)}\right)^2 
         \end{equation*}
-        这表明，在假设噪声服从高斯分布的前提下，利用最大似然估计求解得到的式子与基于均方误差的\textbf{经验风险最小化（ERM）}是完全一致的，二者共享同一个最优解：
+        这表明, 在假设噪声服从高斯分布的前提下, 利用最大似然估计求解得到的式子与基于均方误差的\textbf{经验风险最小化(ERM)}是完全一致的, 二者共享同一个最优解: 
         \begin{equation*}
         \boldsymbol{w}^*_{MLE} = \arg\max_{\boldsymbol{w}} \ln L(\boldsymbol{w}) = (\boldsymbol{X}\boldsymbol{X}^\top)^{-1}\boldsymbol{X}\boldsymbol{y}
         \end{equation*}
@@ -258,28 +262,28 @@
 
     \item \textbf{贝叶斯估计}
     \begin{itemize}
-        \item \textbf{核心思想}：不同于将参数看作固定常数的极大似然方法，贝叶斯估计将参数 $\boldsymbol{w}$ 本身也视作一个随机变量，去寻找结合数据更新后参数表现出的概率分布（即后验分布）。严格的贝叶斯推断将参数本身视为随机变量，它最终求解得到的是一个完整的后验分布 $p(\boldsymbol{w}|\boldsymbol{X}, \boldsymbol{y})$，这本质上提供了参数取值的区间概率估计（反映了对参数的不确定性）。
-        \item \textbf{从贝叶斯公式到后验对数}：根据贝叶斯公式推断，若假设似然的噪声方差为 $\sigma^2$ ，且参数先验服从零均值高斯分布 $\mathcal{N}(\boldsymbol{0}, \nu^2\boldsymbol{I})$，对后验概率展开并取对数后，可得如下推导式（省略常数项）：
+        \item \textbf{核心思想}: 不同于将参数看作固定常数的极大似然方法, 贝叶斯估计将参数 $\boldsymbol{w}$ 本身也视作一个随机变量, 去寻找结合数据更新后参数表现出的概率分布(即后验分布). 严格的贝叶斯推断将参数本身视为随机变量, 它最终求解得到的是一个完整的后验分布 $p(\boldsymbol{w}|\boldsymbol{X}, \boldsymbol{y})$, 这本质上提供了参数取值的区间概率估计(反映了对参数的不确定性). 
+        \item \textbf{从贝叶斯公式到后验对数}: 根据贝叶斯公式推断, 若假设似然的噪声方差为 $\sigma^2$ , 且参数先验服从零均值高斯分布 $\mathcal{N}(\boldsymbol{0}, \nu^2\boldsymbol{I})$, 对后验概率展开并取对数后, 可得如下推导式(省略常数项): 
         \begin{align*}
         \log p(\boldsymbol{w} \mid \boldsymbol{X}, \boldsymbol{y} ; \nu, \sigma) & \propto \log p(\boldsymbol{y} \mid \boldsymbol{X}, \boldsymbol{w} ; \sigma)+\log p(\boldsymbol{w} ; \nu) \\
         & \propto-\frac{1}{2 \sigma^2} \sum_{n=1}^N\left(y^{(n)}-\boldsymbol{w}^{\top} \boldsymbol{x}^{(n)}\right)^2-\frac{1}{2 \nu^2} \boldsymbol{w}^{\top} \boldsymbol{w}, \\
         & =-\frac{1}{2 \sigma^2}\left\|\boldsymbol{y}-\boldsymbol{X}^{\top} \boldsymbol{w}\right\|^2-\frac{1}{2 \nu^2} \boldsymbol{w}^{\top} \boldsymbol{w} .
         \end{align*}
-        这里计算出的条件概率 $p(\boldsymbol{w} \mid \boldsymbol{X}, \boldsymbol{y} ; \nu, \sigma)$ 实际上代表了在给定当前观测数据 $\boldsymbol{X}$ 和 $\boldsymbol{y}$ 的情况下，模型参数 $\boldsymbol{w}$ 取不同值的后验概率分布。
-        \item \textbf{预测新特征的标签}：在得到完整后验分布的解析或近似表达后，对于给出的全新特征向量 $\boldsymbol{x}^*$，真正严格的贝叶斯估计并不会简单取单一参数来计算，而是通过对整个后验分布内的参数空间进行无偏的积分输出新标签预测的分布。
+        这里计算出的条件概率 $p(\boldsymbol{w} \mid \boldsymbol{X}, \boldsymbol{y} ; \nu, \sigma)$ 实际上代表了在给定当前观测数据 $\boldsymbol{X}$ 和 $\boldsymbol{y}$ 的情况下, 模型参数 $\boldsymbol{w}$ 取不同值的后验概率分布. 
+        \item \textbf{预测新特征的标签}: 在得到完整后验分布的解析或近似表达后, 对于给出的全新特征向量 $\boldsymbol{x}^*$, 真正严格的贝叶斯估计并不会简单取单一参数来计算, 而是通过对整个后验分布内的参数空间进行无偏的积分输出新标签预测的分布. 
 
-        具体到线性回归模型中，$p(y^* \mid \boldsymbol{x}^*, \boldsymbol{w})$ 实际上就是均值为 $\boldsymbol{w}^\top \boldsymbol{x}^*$、方差为 $\sigma^2$ 的高斯概率密度函数。在这里，我们将 $y^*$ 和 $\boldsymbol{w}$ 放在联合分布中考虑，然后通过对未知的随机向量 $\boldsymbol{w}$ 积分求得该边际分布：
+        具体到线性回归模型中, $p(y^* \mid \boldsymbol{x}^*, \boldsymbol{w})$ 实际上就是均值为 $\boldsymbol{w}^\top \boldsymbol{x}^*$、方差为 $\sigma^2$ 的高斯概率密度函数. 在这里, 我们将 $y^*$ 和 $\boldsymbol{w}$ 放在联合分布中考虑, 然后通过对未知的随机向量 $\boldsymbol{w}$ 积分求得该边际分布: 
         \begin{equation*}
         p(y^* \mid \boldsymbol{x}^*, \boldsymbol{X}, \boldsymbol{y}) = \int p(y^* \mid \boldsymbol{x}^*, \boldsymbol{w}) p(\boldsymbol{w} \mid \boldsymbol{X}, \boldsymbol{y}) d\boldsymbol{w}
         .
         \end{equation*}
     \end{itemize}
 
-    \item \textbf{最大后验估计（MAP）与正则化}
+    \item \textbf{最大后验估计(MAP)与正则化}
     \begin{itemize}
-        \item \textbf{从区间到点估计}：正如上文所述，严格进行全分布积分计算开销很大。所以在具体做出决策评估时为了简化运用，常取使得该后验分布概率（即上述对数后验公式）达到最大的那个单一参数值作为其点估计值，即最大后验估计（MAP）。
-        \item \textbf{附加先验的影响定论}：对照上述推导出的对数后验目标式，要想使得后验概率最大，“负的平方误差项减去范数项”就转为了要求其对应的相反数式子达到最小。
-        \item \textbf{与结构风险本质关联}：令正则系数与方差关系满足 $\lambda = \frac{\sigma^2}{\nu^2}$（或此前表示的 $\sigma^2 \alpha$），不难看出，这与\textbf{结构风险最小化（SRM）加入了$L2$先验正则}信息后做平滑参数估计的公式具有一致性。最大后验估计给出的最优参数解析解即为：
+        \item \textbf{从区间到点估计}: 正如上文所述, 严格进行全分布积分计算开销很大. 所以在具体做出决策评估时为了简化运用, 常取使得该后验分布概率(即上述对数后验公式)达到最大的那个单一参数值作为其点估计值, 即最大后验估计(MAP). 
+        \item \textbf{附加先验的影响定论}: 对照上述推导出的对数后验目标式, 要想使得后验概率最大, “负的平方误差项减去范数项”就转为了要求其对应的相反数式子达到最小. 
+        \item \textbf{与结构风险本质关联}: 令正则系数与方差关系满足 $\lambda = \frac{\sigma^2}{\nu^2}$(或此前表示的 $\sigma^2 \alpha$), 不难看出, 这与\textbf{结构风险最小化(SRM)加入了$L2$先验正则}信息后做平滑参数估计的公式具有一致性. 最大后验估计给出的最优参数解析解即为: 
         \begin{equation*}
         \boldsymbol{w}^*_{MAP} = \arg\max_{\boldsymbol{w}} \log p(\boldsymbol{w}|\boldsymbol{X}, \boldsymbol{y}) = (\boldsymbol{X}\boldsymbol{X}^\top + \lambda \boldsymbol{I})^{-1}\boldsymbol{X}\boldsymbol{y}
         \end{equation*}
@@ -287,18 +291,18 @@
 
     \item \textbf{估计思想总结表格}
     \begin{itemize}
-        \item 我们可以将线性回归中学习模型求解最优参数 $\boldsymbol{w}$ 的视角做如下矩阵概括归纳：
+        \item 我们可以将线性回归中学习模型求解最优参数 $\boldsymbol{w}$ 的视角做如下矩阵概括归纳: 
         \vspace{1em}
         \begin{center}
         \begin{tabular}{|c|c|c|}
         \hline
-        & \textbf{无先验信息（唯数据论）} & \textbf{加入先验信息} \\
+        & \textbf{无先验信息(唯数据论)} & \textbf{加入先验信息} \\
         \hline
-        \textbf{函数测度视角（平方误差）} & 经验风险最小化（ERM） & 结构风险最小化（SRM） \\
+        \textbf{函数测度视角(平方误差)} & 经验风险最小化(ERM) & 结构风险最小化(SRM) \\
         \hline
-        \textbf{概率分布视角（概率统计）} & 最大似然估计（MLE） & 最大后验估计（MAP） \\
+        \textbf{概率分布视角(概率统计)} & 最大似然估计(MLE) & 最大后验估计(MAP) \\
         \hline
-        \multicolumn{3}{|c|}{最  优  参  数  的  闭  式  解：} \\
+        \multicolumn{3}{|c|}{最  优  参  数  的  闭  式  解: } \\
         \cline{1-3}
             $\boldsymbol{w}^*_{MLE / ERM}$ & \multicolumn{2}{c|}{$(\boldsymbol{X}\boldsymbol{X}^\top)^{-1}\boldsymbol{X}\boldsymbol{y}$} \\
         \cline{1-3}
@@ -309,7 +313,7 @@
     \end{itemize}
 \end{enumerate}
 
-（注：详细定义和更多的内容请参考课程教材第二章、附录 D。）
+(注: 详细定义和更多的内容请参考课程教材第二章、附录 D. )
 
 
 \end{document}
