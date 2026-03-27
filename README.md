@@ -43,6 +43,15 @@
 
 本学期共安排 **6 次实验课**。实验课的代码示例与指导文档均放置在 `labs/`  下。我们将主要使用 **Python** 和 **PyTorch** 框架来搭建和训练模型。建议同学们在实验课前配置好相应的本地环境或使用云端环境。
 
+
+##  项目分享
+
+如果你做了有趣的项目，或者完成了任何与本课程相关、希望分享给大家的内容，我专门建立了一个项目仓库：
+
+[neural-networks-and-deep-learning-student-project](https://github.com/MrGodfrey/neural-networks-and-deep-learning-student-project)
+
+请移步该仓库，并通过 Pull Request 的方式提交你认为值得分享的内容。
+
 ## 💬 Issue 使用指南 (Q&A)
 
 如果你在课程学习或实验过程中遇到任何问题，欢迎在 GitHub 的 [Issues](https://github.com/MrGodfrey/neural-networks-and-deep-learning/issues) 区提问与互动！这里是我们交流和答疑的主要平台。
@@ -57,6 +66,7 @@
 1. 提问前请先在 Issues 列表中搜索，看看是否已有同学提出了类似问题并得到了解答。
 2. 尽量提供充足的信息。如果是代码问题，请务必附上完整的报错截图或日志、关键代码片段以及你的环境版本（如操作系统、Python 和 PyTorch 版本）。
 3. 互相帮助。如果你知道其他同学提问的答案，欢迎直接回复解答！
+
 
 
 ## 🤝 参与贡献 (Pull Request 指南)
@@ -94,6 +104,7 @@
 - 修正 `notes/` 目录下讲义中的错别字或 LaTeX 公式拼写。
 - 补充或完善 `labs/` 目录下的代码注释。
 - 提供实验课题目的其他可行解法或进阶思路。
+
 
 ## 📚 参考资源
 
