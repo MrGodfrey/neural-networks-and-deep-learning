@@ -1,48 +1,4 @@
-\documentclass{article}
-
-\usepackage{ctex}
-\usepackage{amsmath}
-\usepackage{amsfonts}
-\usepackage{graphicx}
-\usepackage{setspace}
-\usepackage{amssymb}
-\usepackage{latexsym}
-\usepackage{amsthm, euscript, makeidx, color, mathrsfs}
-\usepackage[numbers,sort&compress]{natbib}
-\usepackage{hyperref}
-\hypersetup{
-    colorlinks=true,
-    linkcolor=blue,
-    urlcolor=cyan,
-    citecolor=cyan
-}
-
-\usepackage{geometry}
-\geometry{
-	a4paper,
-	left=2.5cm,
-	right=2.5cm,
-	top = 3cm,
-	bottom = 2cm
-}
-
-\newtheorem {theorem}{Theorem}[section]
-\newtheorem {lemma}[theorem]{{\bf Lemma}}
-\newtheorem {corollary}[theorem]{{\bf Corollary}}
-\newtheorem {proposition}[theorem]{{\bf Proposition}}
-\theoremstyle{remark}
-\newtheorem {remark}{{\bf Remark}}[section]
-\newtheorem {conclusion}[remark]{Conclusion}
-\newtheorem {condition}{{\bf Condition}}[section]
-\theoremstyle{definition}
-\newtheorem {definition}{{\bf Definition}}[section]
-\newtheorem {example}{{\bf Example}}[section]
-\theoremstyle{plain}
-\numberwithin {equation}{section}
-\newtheorem{assumption}{Assumption}
-\numberwithin{assumption}{section}
-
-\allowdisplaybreaks
+\documentclass{../nndlcourse}
 
 \begin{document}
 
@@ -192,23 +148,109 @@
 第9周劳动节，第16周端午节。
 
 \begin{enumerate}
-    \item 机器学习概述
-    \item 概率论基础回顾 
-    \item 线性回归模型
-    \item 线性分类模型
-    \item 前馈神经网络
-    \item 实验课：线性模型的实现与应用
-    \item 卷积神经网络
-    \item 循环神经网络
-    \item 实验课：前馈神经网络的实现与应用
-    \item 实验课：卷积神经网络的实现与应用
-    \item 实验课：循环神经网络的实现与应用
-    \item 网络优化与正则化
-    \item 注意力机制
-    \item 大语言模型
-    \item 实验课：网络优化与正则化方法的实现与应用
-    \item 实验课：注意力机制的实现与应用
-    \item 复习课
+\item 机器学习概述
+\begin{itemize}
+\item 教学内容：介绍机器学习的基本概念、主要类型（如监督学习、无监督学习和强化学习）及其应用领域，为后续课程奠定基础。
+\item 对学生的要求：预习相关教材章节，理解机器学习的定义和常见任务，并思考其在实际生活中的应用场景。
+\end{itemize}
+
+\item 概率论基础回顾 
+\begin{itemize}
+    \item 教学内容：回顾概率论的核心概念，包括随机变量、概率分布、期望、方差和贝叶斯定理，为后续模型学习提供数学基础。
+    \item 对学生的要求：复习概率论知识，完成相关练习题，确保掌握基本概念和公式，以便顺利应用于后续模型。
+\end{itemize}
+
+\item 线性回归模型
+\begin{itemize}
+    \item 教学内容：讲解线性回归模型的原理，包括最小二乘法、假设检验和模型评估指标，并通过示例演示其应用。
+    \item 对学生的要求：理解线性回归的理论，动手实现简单线性回归模型，分析数据集并提交实验报告。
+\end{itemize}
+
+\item 线性分类模型
+\begin{itemize}
+    \item 教学内容：介绍线性分类模型，如逻辑回归和感知机，讨论决策边界、损失函数和优化方法。
+    \item 对学生的要求：掌握分类与回归的区别，实现逻辑回归模型，并进行性能评估。
+\end{itemize}
+
+\item 前馈神经网络
+\begin{itemize}
+    \item 教学内容：深入讲解前馈神经网络的结构，包括前向传播、反向传播算法和激活函数的作用，以及其在复杂任务中的应用。
+    \item 对学生的要求：学习神经网络基本原理，编程实现一个简单的前馈神经网络，并调试参数。
+\end{itemize}
+
+\item 实验课：线性模型的实现与应用
+\begin{itemize}
+    \item 教学内容：通过编程实践，实现线性回归和线性分类模型，在真实数据集上进行训练、测试和应用，加深对线性模型的理解。
+    \item 对学生的要求：完成实验代码，撰写详细的实验报告，分析模型性能并提出改进思路。
+\end{itemize}
+
+\item 卷积神经网络
+\begin{itemize}
+    \item 教学内容：介绍卷积神经网络（CNN）的架构，包括卷积层、池化层和全连接层，以及其在图像处理等领域的应用。
+    \item 对学生的要求：掌握CNN的基本原理，使用深度学习框架构建CNN模型，并应用于图像分类任务。
+\end{itemize}
+
+\item 循环神经网络
+\begin{itemize}
+    \item 教学内容：讲解循环神经网络（RNN）及其变体（如LSTM和GRU），处理序列数据和时间序列预测问题。
+    \item 对学生的要求：理解RNN的循环结构和应用场景，实现一个简单的序列模型，如文本生成。
+\end{itemize}
+
+\item 实验课：前馈神经网络的实现与应用
+\begin{itemize}
+    \item 教学内容：实践前馈神经网络的实现，包括模型构建、训练调参与优化，应用于分类或回归任务以巩固知识。
+    \item 对学生的要求：独立完成前馈神经网络实验，调试超参数，评估模型效果并记录实验过程。
+\end{itemize}
+
+\item 实验课：卷积神经网络的实现与应用
+\begin{itemize}
+    \item 教学内容：动手实现卷积神经网络，在图像数据集上进行训练和测试，学习模型调优和可视化技巧。
+    \item 对学生的要求：掌握CNN的实现细节，优化模型精度，提交实验代码和结果分析。
+\end{itemize}
+
+\item 实验课：循环神经网络的实现与应用
+\begin{itemize}
+    \item 教学内容：实践循环神经网络的实现，用于文本生成、时间序列预测等序列任务，探索RNN的实际应用。
+    \item 对学生的要求：实现RNN模型，处理并提供序列数据，分析预测结果并撰写实验总结。
+\end{itemize}
+
+\item 网络优化与正则化
+\begin{itemize}
+    \item 教学内容：讨论神经网络优化方法（如梯度下降变体）和正则化技术（如Dropout、L2正则化），以提升模型泛化能力。
+    \item 对学生的要求：理解优化与正则化的原理，在实验中应用这些方法，并比较其对模型的影响。
+\end{itemize}
+
+\item 注意力机制
+\begin{itemize}
+    \item 教学内容：介绍注意力机制的基本思想，及其在自然语言处理和计算机视觉中的应用，如Transformer模型的核心组件。
+    \item 对学生的要求：学习注意力机制的计算方式和优势，思考其在不同任务中的适用性。
+\end{itemize}
+
+\item 大语言模型
+\begin{itemize}
+    \item 教学内容：概述大语言模型（如GPT系列）的发展、架构、预训练方法和微调技术，以及其广泛的应用场景。
+    \item 对学生的要求：了解大语言模型的基本概念，探索相关开源项目或案例，为后续研究做准备。
+\end{itemize}
+
+\item 实验课：网络优化与正则化方法的实现与应用
+\begin{itemize}
+    \item 教学内容：通过实验实现不同的优化算法和正则化技术，比较它们对模型性能的影响，加深对模型调优的理解。
+    \item 对学生的要求：在神经网络实验中应用优化和正则化方法，记录比较结果，并分析原因。
+\end{itemize}
+
+\item 实验课：注意力机制的实现与应用
+\begin{itemize}
+    \item 教学内容：动手实现注意力机制，如在序列到序列模型中的应用，或构建简单Transformer组件，实践注意力计算。
+    \item 对学生的要求：编程实现注意力机制，理解其工作流程，完成指定任务并提交实验报告。
+\end{itemize}
+
+\item 复习课
+\begin{itemize}
+    \item 教学内容：回顾整个课程的核心内容，总结机器学习模型和方法，进行答疑解惑，帮助学生准备期末考试。
+    \item 对学生的要求：复习所有课程材料和实验内容，整理疑问并积极参与复习讨论，为考试做好准备。
+\end{itemize}
+
+
 \end{enumerate}
 	
 \section*{教学方法}
