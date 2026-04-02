@@ -1,0 +1,417 @@
+\documentclass{../nndlcourse}
+
+\begin{document}
+
+\title{实验1 - PyTorch 基础与线性模型}
+\author{数据科学与大数据技术专业}
+\date{第1--3周}
+\maketitle
+
+
+% ============================================================
+\section{实验目标}
+% ============================================================
+\begin{itemize}
+    \item 掌握 PyTorch 张量（\texttt{torch.Tensor}）的基本操作及自动微分（\texttt{autograd}）机制.
+    \item 理解并实现线性回归模型，掌握经验风险最小化（ERM）与结构风险最小化（SRM / L2 正则化）的区别.
+    \item 掌握线性分类模型的 PyTorch 实现，包括 Logistic 回归、感知器与支持向量机（SVM）.
+    \item 实现多分类线性模型（Softmax 回归），并在 MNIST 数据集上训练与评估.
+    \item 在不借助任何高级 API 的前提下，从零手写 Logistic 回归的前向传播、损失函数与梯度下降.
+    \item 掌握 PyTorch 基础操作（线性函数、Sigmoid、One-Hot 编码、Xavier 初始化），并搭建一个三层全连接神经网络在手势数字数据集上进行多分类训练.
+    \item 熟悉 \texttt{DataLoader} / \texttt{TensorDataset} 的使用，理解小批量梯度下降（Mini-batch SGD）与 Adam 优化器的作用.
+\end{itemize}
+
+% ============================================================
+\section{实验环境}
+% ============================================================
+\begin{itemize}
+    \item 操作系统: Windows / Linux / macOS
+    \item Python 3.7 及以上
+    \item 主要依赖库: \texttt{torch}、\texttt{torchvision}、\texttt{numpy}、\texttt{matplotlib}、\texttt{seaborn}、\texttt{h5py}
+    \item 推荐开发环境: Jupyter Notebook 或 VS Code
+\end{itemize}
+
+% ============================================================
+\section{背景知识}
+% ============================================================
+
+\subsection{机器学习四要素与风险函数}
+
+机器学习的核心要素包括数据、模型、学习准则与优化算法. 给定训练集 $\{(\boldsymbol{x}^{(n)}, y^{(n)})\}_{n=1}^N$，
+模型参数 $\boldsymbol{w}$ 的学习通常通过最小化某种风险函数来完成.
+
+\textbf{期望风险（Expected Risk）}：
+\begin{align}
+    R(\boldsymbol{w}) = \mathbb{E}\left[\mathcal{L}\left(y, f(\boldsymbol{x}; \boldsymbol{w})\right)\right]
+\end{align}
+由于真实数据分布未知，实际中以\textbf{经验风险（Empirical Risk）}来近似：
+\begin{align}
+    \hat{R}_D(\boldsymbol{w}) = \frac{1}{N}\sum_{n=1}^N \mathcal{L}\left(y^{(n)}, f(\boldsymbol{x}^{(n)}; \boldsymbol{w})\right)
+\end{align}
+
+\textbf{经验风险最小化（ERM）}直接最小化 $\hat{R}_D(\boldsymbol{w})$，但可能导致过拟合.
+
+\textbf{结构风险最小化（SRM）}在经验风险的基础上引入正则化惩罚项（如 L2 正则化）：
+\begin{align}
+    \mathcal{R}_{srm}(\boldsymbol{w}) = \hat{R}_D(\boldsymbol{w}) + \frac{\lambda}{2}\|\boldsymbol{w}\|^2
+\end{align}
+其中 $\lambda > 0$ 为正则化超参数，用于控制模型复杂度，缓解过拟合.
+
+\subsection{线性回归}
+
+线性回归模型通过特征的加权组合来预测连续输出. 采用均方误差（MSE）作为损失函数时，经验风险为：
+\begin{align}
+    \mathcal{R}(\boldsymbol{w}) = \frac{1}{2}\left\|\boldsymbol{y} - \boldsymbol{X}^\top \boldsymbol{w}\right\|^2
+\end{align}
+其中 $\boldsymbol{X} = [\boldsymbol{x}^{(1)}, \ldots, \boldsymbol{x}^{(N)}]$ 为特征矩阵，$\boldsymbol{y}=[y^{(1)},\ldots,y^{(N)}]^\top$ 为标签向量.
+
+ERM 的解析最优解（正规方程）为：
+\begin{align}
+    \boldsymbol{w}^*_{ERM} = \left(\boldsymbol{X}\boldsymbol{X}^\top\right)^{-1}\boldsymbol{X}\boldsymbol{y}
+\end{align}
+引入 L2 正则化后（SRM / 岭回归）的解析最优解为：
+\begin{align}
+    \boldsymbol{w}^*_{SRM} = \left(\boldsymbol{X}\boldsymbol{X}^\top + \lambda\boldsymbol{I}\right)^{-1}\boldsymbol{X}\boldsymbol{y}
+\end{align}
+在 PyTorch 中，L2 正则化可通过优化器的 \texttt{weight\_decay} 参数直接实现.
+
+\subsection{前向传播与反向传播}
+
+\textbf{前向传播（Forward Propagation）}指将输入 $\boldsymbol{x}$ 经过网络各层运算得到预测输出 $\hat{y}$ 的过程. 以线性回归为例：
+\begin{align}
+    \hat{y} = \boldsymbol{w}^\top \boldsymbol{x} + b
+\end{align}
+
+\textbf{反向传播（Backward Propagation）}基于链式法则（Chain Rule）计算损失函数 $\mathcal{L}$ 对各参数的梯度：
+\begin{align}
+    \frac{\partial \mathcal{L}}{\partial \boldsymbol{w}} = \frac{\partial \mathcal{L}}{\partial \hat{y}} \cdot \frac{\partial \hat{y}}{\partial \boldsymbol{w}}
+\end{align}
+在 PyTorch 中，调用 \texttt{loss.backward()} 即可自动完成反向传播，随后调用 \texttt{optimizer.step()} 更新参数.
+
+\subsection{Logistic 回归（二分类）}
+
+Logistic 回归利用 Sigmoid 函数将线性输出映射为概率：
+\begin{align}
+    \hat{y} = \sigma\left(\boldsymbol{w}^\top \boldsymbol{x}\right) = \frac{1}{1 + \exp\left(-\boldsymbol{w}^\top \boldsymbol{x}\right)}
+\end{align}
+
+采用二元交叉熵（Binary Cross-Entropy，BCE）作为损失函数：
+\begin{align}
+    \mathcal{R}(\boldsymbol{w}) = -\frac{1}{N}\sum_{n=1}^N \left[y^{(n)}\log\hat{y}^{(n)} + \left(1 - y^{(n)}\right)\log\left(1 - \hat{y}^{(n)}\right)\right]
+\end{align}
+
+该损失关于参数 $\boldsymbol{w}$ 的梯度（推导结果极为简洁）为：
+\begin{align}
+    \frac{\partial \mathcal{R}(\boldsymbol{w})}{\partial \boldsymbol{w}} = \frac{1}{N}\sum_{n=1}^N \left(\hat{y}^{(n)} - y^{(n)}\right)\boldsymbol{x}^{(n)}
+\end{align}
+
+参数更新规则（梯度下降，学习率为 $\alpha$）：
+\begin{align}
+    \boldsymbol{w}_{t+1} \leftarrow \boldsymbol{w}_t - \alpha \cdot \frac{\partial \mathcal{R}(\boldsymbol{w}_t)}{\partial \boldsymbol{w}_t}
+\end{align}
+
+在 PyTorch 中，\texttt{BCEWithLogitsLoss} 将 Sigmoid 激活与 BCE 损失合并，数值上更为稳定.
+
+\subsection{感知器（Perceptron）}
+
+感知器是最早的线性分类模型，采用符号函数进行决策：
+\begin{align}
+    \hat{y} = \operatorname{sign}\left(\boldsymbol{w}^\top \boldsymbol{x}\right)
+\end{align}
+标签 $y \in \{+1, -1\}$. 感知器对误分类样本（即满足 $y\left(\boldsymbol{w}^\top\boldsymbol{x}\right) \le 0$ 的样本）进行参数更新：
+\begin{align}
+    \boldsymbol{w}_{t+1} = \boldsymbol{w}_t + y\boldsymbol{x}
+\end{align}
+其损失函数形式为 $\mathcal{L} = \max(0, -y(\boldsymbol{w}^\top\boldsymbol{x}))$. 前提条件：数据需线性可分，否则算法不收敛.
+
+\subsection{支持向量机（SVM）}
+
+SVM 的核心思想是寻找最大间隔超平面. 软间隔 SVM 的目标函数为：
+\begin{align}
+    \min_{\boldsymbol{w}, b} \sum_{n=1}^N \max\left(0,\, 1 - y^{(n)}\left(\boldsymbol{w}^\top\boldsymbol{x}^{(n)} + b\right)\right) + \frac{1}{2C}\|\boldsymbol{w}\|^2
+\end{align}
+其中前半部分为 Hinge 损失，后半部分为正则化项，超参数 $C$ 用于调节两者平衡.
+
+Hinge 损失的定义：
+\begin{align}
+    \mathcal{L}_{hinge} = \max\left(0,\, 1 - y\cdot f(\boldsymbol{x})\right)
+\end{align}
+在 PyTorch 中可通过 \texttt{torch.clamp(1 - y * y\_pred, min=0)} 计算，并结合 \texttt{weight\_decay} 实现正则化.
+
+\subsection{Softmax 回归（多分类）}
+
+Softmax 回归是 Logistic 回归在多分类问题上的推广. 对于 $C$ 个类别，Softmax 函数将线性输出的实数得分 $\boldsymbol{z}\in\mathbb{R}^C$ 映射为概率分布：
+\begin{align}
+    \operatorname{softmax}(z_c) = \frac{\exp(z_c)}{\sum_{i=1}^C \exp(z_i)}, \quad c = 1, \ldots, C
+\end{align}
+
+对应的多元交叉熵损失（Categorical Cross-Entropy）为：
+\begin{align}
+    \mathcal{L} = -\sum_{c=1}^C \mathbb{I}[y = c]\log\operatorname{softmax}(z_c)
+\end{align}
+在 PyTorch 中，\texttt{CrossEntropyLoss} 将 Softmax 与交叉熵合并（输入为未归一化的 logits，标签为类别索引），数值更加稳定.
+
+\subsection{信息论基础：交叉熵与 KL 散度}
+
+\textbf{信息熵（Entropy）}衡量分布 $P$ 的不确定性：
+\begin{align}
+    H(P) = -\sum_x P(x)\log P(x)
+\end{align}
+
+\textbf{交叉熵（Cross-Entropy）}衡量用预测分布 $Q$ 编码真实分布 $P$ 所需的平均信息量：
+\begin{align}
+    H(P, Q) = -\sum_x P(x)\log Q(x)
+\end{align}
+
+\textbf{KL 散度（Kullback-Leibler Divergence）}，又称相对熵，量化两个分布之间的差异：
+\begin{align}
+    D_{\mathrm{KL}}(P \| Q) = \sum_x P(x)\log\frac{P(x)}{Q(x)} = H(P, Q) - H(P)
+\end{align}
+最小化交叉熵损失等价于最小化 $D_{\mathrm{KL}}(P\|Q)$（因为 $H(P)$ 与模型参数无关），也等价于对真实数据分布做极大似然估计（MLE）.
+
+\subsection{Xavier 初始化与 One-Hot 编码}
+
+\textbf{Xavier / Glorot 初始化}：权重从均值为 0、方差为 $\frac{2}{n_{in}+n_{out}}$ 的分布中采样，有助于保持各层激活值的方差一致，缓解梯度消失/爆炸：
+\begin{align}
+    W \sim \mathcal{N}\!\left(0,\, \frac{2}{n_{in} + n_{out}}\right)
+\end{align}
+在 PyTorch 中使用 \texttt{nn.init.xavier\_normal\_(param)} 实现.
+
+\textbf{One-Hot 编码}将整数类别标签 $y \in \{0, \ldots, C-1\}$ 转化为长度为 $C$ 的 0/1 向量，便于可视化与理解. 在 PyTorch 中使用 \texttt{F.one\_hot(label, num\_classes=C)} 实现.
+
+\subsection{PyTorch \texttt{DataLoader} 与训练循环}
+
+\texttt{TensorDataset} 将特征张量与标签张量封装为数据集，\texttt{DataLoader} 在其上进行分批（mini-batch）和随机打乱（shuffle），支持高效的迭代训练. 标准 PyTorch 训练循环如下：
+
+\begin{enumerate}
+    \item \texttt{optimizer.zero\_grad()}：清零上一步累积的梯度.
+    \item 前向传播：调用模型或手写前向函数，得到预测输出.
+    \item 计算损失：将预测输出与真实标签代入损失函数.
+    \item \texttt{loss.backward()}：反向传播，自动计算所有参数的梯度.
+    \item \texttt{optimizer.step()}：按照优化规则更新参数.
+\end{enumerate}
+
+\textbf{Adam 优化器}结合了 Momentum 与 RMSProp，自适应调节各参数的学习率：
+\begin{align}
+    m_t &= \beta_1 m_{t-1} + (1-\beta_1)g_t \\
+    v_t &= \beta_2 v_{t-1} + (1-\beta_2)g_t^2 \\
+    \hat{m}_t &= \frac{m_t}{1-\beta_1^t}, \quad \hat{v}_t = \frac{v_t}{1-\beta_2^t} \\
+    \theta_t &= \theta_{t-1} - \eta\frac{\hat{m}_t}{\sqrt{\hat{v}_t}+\epsilon}
+\end{align}
+默认超参数：$\beta_1=0.9$，$\beta_2=0.999$，$\epsilon=10^{-8}$.
+
+% ============================================================
+\section{实验步骤}
+% ============================================================
+
+\subsection*{实验1：PyTorch 基础与线性模型}
+
+\subsubsection*{1.1 线性回归}
+
+\textbf{实验目标：}实现并比较 ERM（纯均方误差）与 SRM（带 L2 正则化的均方误差）下的线性回归模型.
+
+\textbf{定义与公式：}
+\begin{itemize}
+    \item \textbf{数据生成}：$y = 2x + 3 + \varepsilon$，其中 $\varepsilon \sim \mathcal{N}(0, 4)$.
+    \item \textbf{ERM 损失（MSE）}：
+    \begin{align}
+        \mathcal{L}_{ERM} = \frac{1}{N}\sum_{n=1}^N\left(\hat{y}^{(n)} - y^{(n)}\right)^2
+    \end{align}
+    \item \textbf{SRM 损失（MSE + L2 正则化）}：
+    \begin{align}
+        \mathcal{L}_{SRM} = \frac{1}{N}\sum_{n=1}^N\left(\hat{y}^{(n)} - y^{(n)}\right)^2 + \lambda\|\boldsymbol{w}\|^2
+    \end{align}
+\end{itemize}
+
+\textbf{PyTorch 关键 API：}
+\begin{itemize}
+    \item 模型定义：\texttt{nn.Linear(in\_features, out\_features)}
+    \item 损失函数：\texttt{nn.MSELoss()}
+    \item 优化器：\texttt{torch.optim.SGD(model.parameters(), lr=0.01)}
+    \item L2 正则化：\texttt{torch.optim.SGD(..., weight\_decay=\(\lambda\))}
+\end{itemize}
+
+\textbf{实验细节：}
+\begin{itemize}
+    \item 分别使用 ERM 和 SRM（\texttt{weight\_decay=1.5}）训练同一线性模型 100 个 epoch.
+    \item 绘制损失曲线，对比两种设置下的收敛速度与最终参数值.
+    \item 观察较大的 \texttt{weight\_decay} 如何将学习到的权重向零压缩.
+\end{itemize}
+
+\subsubsection*{1.2 线性分类}
+
+\textbf{实验目标：}在二维二分类数据集上分别实现 Logistic 回归、感知器和 SVM，并可视化各模型的决策边界.
+
+\paragraph{(a) Logistic 回归}
+
+\textbf{公式：}
+\begin{align}
+    \hat{y} &= \sigma(\boldsymbol{w}^\top\boldsymbol{x} + b) = \frac{1}{1+e^{-(\boldsymbol{w}^\top\boldsymbol{x}+b)}} \\
+    \mathcal{L} &= -\frac{1}{N}\sum_{n=1}^N \left[y^{(n)}\log\sigma(z^{(n)}) + (1-y^{(n)})\log(1-\sigma(z^{(n)}))\right]
+\end{align}
+
+\textbf{PyTorch 关键 API：}\texttt{nn.BCEWithLogitsLoss()}（数值上等价于先过 Sigmoid 再计算 BCE，但更稳定）.
+
+\paragraph{(b) 感知器}
+
+\textbf{算法（误分类驱动更新）：}标签 $y \in \{+1, -1\}$，对每个样本判断 $y^{(n)}(\boldsymbol{w}^\top\boldsymbol{x}^{(n)} + b) \le 0$ 时执行更新：
+\begin{align}
+    \boldsymbol{w} \leftarrow \boldsymbol{w} + \eta\, y^{(n)}\boldsymbol{x}^{(n)}, \quad b \leftarrow b + \eta\, y^{(n)}
+\end{align}
+此部分直接使用 PyTorch 张量操作手动实现，不借助 \texttt{torch.optim}.
+
+\paragraph{(c) 线性 SVM（Hinge Loss）}
+
+\textbf{公式：}
+\begin{align}
+    \mathcal{L}_{hinge} = \frac{1}{N}\sum_{n=1}^N\max\left(0,\, 1 - y^{(n)}(\boldsymbol{w}^\top\boldsymbol{x}^{(n)} + b)\right) + \frac{\lambda}{2}\|\boldsymbol{w}\|^2
+\end{align}
+
+\textbf{PyTorch 实现：}使用 \texttt{torch.clamp(1 - y\_perc * y\_pred, min=0).mean()} 计算 Hinge 损失，结合 \texttt{weight\_decay} 实现正则化项.
+
+\subsubsection*{1.3 多分类线性模型（Softmax 回归）}
+
+\textbf{实验目标：}在 MNIST 数据集（10 类手写数字）上训练单层 Softmax 线性分类器.
+
+\textbf{模型架构：}输入为 $28\times28=784$ 维展平图像向量，输出为 10 维 logits（未归一化分数）：
+\begin{align}
+    \boldsymbol{z} = \boldsymbol{W}\boldsymbol{x} + \boldsymbol{b}, \quad \boldsymbol{W}\in\mathbb{R}^{10\times 784}
+\end{align}
+
+\textbf{损失函数：}多元交叉熵，PyTorch 提供 \texttt{nn.CrossEntropyLoss()}（内部自动处理 Softmax）.
+
+\textbf{实验细节：}
+\begin{itemize}
+    \item 使用 \texttt{torchvision.datasets.MNIST} 加载数据，\texttt{DataLoader} 分批（batch size=64）.
+    \item 图像形状为 \texttt{(batch\_size, 1, 28, 28)}，需展平为 \texttt{(batch\_size, 784)}，即 \texttt{X.view(-1, 28*28)}.
+    \item 训练 10 个 epoch，打印每 epoch 的训练与测试损失.
+    \item 绘制混淆矩阵（Confusion Matrix），分析各数字的分类情况.
+\end{itemize}
+
+% ----------------------------------------------------------------
+\subsection*{实验2：纯 PyTorch 手写 Logistic 回归}
+
+\textbf{实验目标：}在不使用任何高级 API（如 \texttt{nn.Linear}、\texttt{nn.BCELoss}、\texttt{torch.optim}）的前提下，
+完全基于 PyTorch 张量操作手动实现 Logistic 回归，深入理解神经网络训练的底层机制.
+
+\textbf{手动实现要点：}
+
+\begin{itemize}
+    \item \textbf{参数初始化}：直接使用 \texttt{requires\_grad=True} 创建权重 $\boldsymbol{W} \in \mathbb{R}^{2 \times 1}$ 与偏置 $b \in \mathbb{R}^{1\times 1}$.
+    \item \textbf{前向传播}：
+    \begin{align}
+        \boldsymbol{z} &= \boldsymbol{X}\boldsymbol{W} + b \quad (\text{形状：} (m, 1)) \\
+        \hat{\boldsymbol{y}} &= \sigma(\boldsymbol{z}) = \frac{1}{1 + e^{-\boldsymbol{z}}}
+    \end{align}
+    \item \textbf{损失函数（手动 BCE）}：
+    \begin{align}
+        \mathcal{L} = -\frac{1}{m}\sum_{i=1}^m \left[y^{(i)}\log\hat{y}^{(i)} + (1-y^{(i)})\log(1-\hat{y}^{(i)})\right]
+    \end{align}
+    为防止 $\log(0)$ 导致数值不稳定，需将 $\hat{y}$ 截断至 $[10^{-7},\, 1-10^{-7}]$（使用 \texttt{torch.clamp}）.
+    \item \textbf{反向传播}：调用 \texttt{loss.backward()} 自动计算 $\frac{\partial\mathcal{L}}{\partial\boldsymbol{W}}$ 与 $\frac{\partial\mathcal{L}}{\partial b}$.
+    \item \textbf{手动参数更新}（在 \texttt{torch.no\_grad()} 上下文中执行，以避免梯度追踪）：
+    \begin{align}
+        \boldsymbol{W} &\leftarrow \boldsymbol{W} - \eta \cdot \nabla_{\boldsymbol{W}}\mathcal{L} \\
+        b &\leftarrow b - \eta \cdot \nabla_b\mathcal{L}
+    \end{align}
+    \item \textbf{梯度清零}：每步更新后调用 \texttt{W.grad.zero\_()}、\texttt{b.grad.zero\_()}.
+\end{itemize}
+
+\textbf{实验细节：}
+\begin{itemize}
+    \item 数据：两类高斯分布的二维数据，类别 0 均值 $(-2, -2)$，类别 1 均值 $(2, 2)$，各 100 个样本.
+    \item 训练 200 个 epoch，学习率 $\eta = 0.1$.
+    \item 绘制训练损失曲线与最终决策边界（$P(y=1|\boldsymbol{x})=0.5$ 的等值线）.
+    \item 计算并输出训练集准确率.
+\end{itemize}
+
+% ----------------------------------------------------------------
+\subsection*{W3A1 PyTorch：基础操作与三层神经网络}
+
+\textbf{实验目标：}掌握 PyTorch 的核心基础操作，并搭建一个三层全连接神经网络，在手势数字（Hand Sign）数据集上完成 6 分类任务.
+
+\subsubsection*{基础操作练习}
+
+\paragraph{线性函数}
+实现 $\boldsymbol{Y} = \boldsymbol{W}\boldsymbol{X} + \boldsymbol{b}$，其中 $\boldsymbol{W}\in\mathbb{R}^{4\times 3}$，$\boldsymbol{X}\in\mathbb{R}^{3\times 1}$，$\boldsymbol{b}\in\mathbb{R}^{4\times 1}$.
+使用 \texttt{torch.tensor(..., dtype=torch.float32)} 创建张量，\texttt{torch.matmul} 进行矩阵乘法.
+
+\paragraph{Sigmoid 函数}
+将标量或 Python 数值转换为 \texttt{float32} 张量，调用 \texttt{torch.sigmoid(z)}.
+
+\paragraph{One-Hot 编码}
+将整数标签 $\ell \in \{0, \ldots, C-1\}$ 转为长度为 $C$ 的 one-hot 向量：
+\begin{align}
+    \boldsymbol{e}_\ell = [\underbrace{0, \ldots, 0}_{\ell}, 1, \underbrace{0, \ldots, 0}_{C-\ell-1}]^\top \in \mathbb{R}^C
+\end{align}
+使用 \texttt{F.one\_hot(torch.as\_tensor(label, dtype=torch.long), num\_classes=C).float()}.
+
+\paragraph{参数初始化（Xavier / Glorot Normal）}
+初始化三层网络的权重与偏置：
+\begin{itemize}
+    \item $\boldsymbol{W}_1 \in \mathbb{R}^{25 \times 12288}$，$\boldsymbol{b}_1 \in \mathbb{R}^{25 \times 1}$
+    \item $\boldsymbol{W}_2 \in \mathbb{R}^{12 \times 25}$，$\boldsymbol{b}_2 \in \mathbb{R}^{12 \times 1}$
+    \item $\boldsymbol{W}_3 \in \mathbb{R}^{6 \times 12}$，$\boldsymbol{b}_3 \in \mathbb{R}^{6 \times 1}$
+\end{itemize}
+权重使用 \texttt{nn.init.xavier\_normal\_(torch.empty(shape))} 初始化，偏置初始化为零：\texttt{torch.zeros(shape)}.
+
+\subsubsection*{三层神经网络}
+
+\textbf{网络架构：}$X \xrightarrow{\text{LINEAR}} Z_1 \xrightarrow{\text{ReLU}} A_1 \xrightarrow{\text{LINEAR}} Z_2 \xrightarrow{\text{ReLU}} A_2 \xrightarrow{\text{LINEAR}} Z_3$
+
+\textbf{前向传播公式：}
+\begin{align}
+    Z_1 &= \boldsymbol{W}_1 X + \boldsymbol{b}_1 \\
+    A_1 &= \operatorname{ReLU}(Z_1) = \max(0, Z_1) \\
+    Z_2 &= \boldsymbol{W}_2 A_1 + \boldsymbol{b}_2 \\
+    A_2 &= \operatorname{ReLU}(Z_2) \\
+    Z_3 &= \boldsymbol{W}_3 A_2 + \boldsymbol{b}_3
+\end{align}
+其中输入 $X$ 的形状为 $(12288, N)$（特征维度 $\times$ 批大小），$Z_3$ 为 $(6, N)$ 的 logits 输出.
+
+\textbf{损失函数（多元交叉熵）：}
+\begin{align}
+    \mathcal{L}_{total} = \sum_{i=1}^N \mathcal{L}_{CE}\left(Z_3^{(i)}, y^{(i)}\right)
+\end{align}
+使用 \texttt{F.cross\_entropy(Z3.T, labels, reduction='sum')} 实现（注意需要转置 $Z_3$ 至形状 $(N, 6)$）.
+
+\textbf{训练设置：}
+\begin{itemize}
+    \item 数据集：Hand Sign 手势数字数据集，训练集 1080 张、测试集 120 张，每张图像为 $64 \times 64 \times 3$，展平后维度为 $12288$.
+    \item 预处理：像素值归一化至 $[0, 1]$，即除以 255.
+    \item 优化器：Adam，学习率 $\eta = 0.0001$.
+    \item 训练 1000 个 epoch，小批量大小为 32.
+    \item 使用 \texttt{DataLoader(TensorDataset(X\_train, Y\_train), batch\_size=32, shuffle=True)}.
+\end{itemize}
+
+% ============================================================
+\section{各线性模型对比总结}
+% ============================================================
+
+\begin{center}
+\begin{tabular}{|l|l|l|l|l|}
+\hline
+\textbf{模型} & \textbf{激活函数} & \textbf{损失函数} & \textbf{优化方法} & \textbf{应用场景} \\
+\hline
+线性回归（ERM） & 无 & 均方误差（MSE） & SGD / 最小二乘 & 连续值回归 \\
+线性回归（SRM） & 无 & MSE + L2 正则化 & SGD + \texttt{weight\_decay} & 回归（防过拟合）\\
+Logistic 回归 & Sigmoid & 二元交叉熵（BCE） & SGD / Adam & 二分类概率预测 \\
+Softmax 回归 & Softmax & 多元交叉熵（CE） & SGD / Adam & 多分类概率预测 \\
+感知器 & sign & 错误驱动（Hinge 样） & 在线 SGD & 线性可分二分类 \\
+SVM（软间隔） & sign & Hinge + L2 正则化 & SGD / QP / SMO & 最大间隔二分类 \\
+\hline
+\end{tabular}
+\end{center}
+
+% ============================================================
+\section{实验作业}
+% ============================================================
+\begin{enumerate}
+    \item 按照实验1中的提示补全三个实验（线性回归、线性分类、Softmax 回归）的代码，并观察各模型的损失曲线和准确率.
+    \item 按照实验2的提示，从零实现 Logistic 回归的前向传播、BCE 损失、反向传播和参数更新，观察训练损失下降趋势及决策边界.
+    \item 按照 W3A1 的提示，完成 编程练习.
+    \item \textbf{选做}：在实验1中，尝试不同的 \texttt{weight\_decay} 值（如 $0, 0.1, 1.0, 5.0$），分析正则化强度对模型权重和损失的影响.
+    \item \textbf{选做}：在实验2中，将手动梯度下降替换为使用 \texttt{torch.optim.SGD} 的版本，验证两者结果是否一致.
+\end{enumerate}
+
+\end{document}
