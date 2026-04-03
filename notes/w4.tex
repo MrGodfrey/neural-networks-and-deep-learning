@@ -104,30 +104,6 @@
     \end{itemize}
 \end{enumerate}
 
-\subsection{梯度计算与权重更新}
-
-以前向传播中的第 $l$ 层为例, 记
-\begin{equation*}
-    \boldsymbol{z}^{(l)} = \boldsymbol{W}^{(l)} \boldsymbol{a}^{(l-1)} + \boldsymbol{b}^{(l)}, \quad \boldsymbol{a}^{(l)} = f_l\left(\boldsymbol{z}^{(l)}\right).
-\end{equation*}
-若单个样本对应的损失函数为 $L(\hat{y}, y)$, 则更新权重矩阵 $\boldsymbol{W}^{(l)}$ 的关键在于计算 $\frac{\partial L}{\partial \boldsymbol{W}^{(l)}}$. 定义当前层的误差项
-\begin{equation*}
-    \deta^{(l)} = \frac{\partial L}{\partial \boldsymbol{z}^{(l)}},
-\end{equation*}
-根据链式法则,
-\begin{equation*}
-    \frac{\partial L(\hat{y}, y)}{\partial \boldsymbol{W}^{(l)}} = \frac{\partial L}{\partial \boldsymbol{z}^{(l)}} \frac{\partial \boldsymbol{z}^{(l)}}{\partial \boldsymbol{W}^{(l)}} = \deta^{(l)} \left(\boldsymbol{a}^{(l-1)}\right)^\top.
-\end{equation*}
-对应到矩阵元素上,
-\begin{equation*}
-    \left[ \frac{\partial L(\hat{y}, y)}{\partial \boldsymbol{W}^{(l)}} \right]_{i,j} = \deta_i^{(l)} a_j^{(l-1)}.
-\end{equation*}
-同理, 偏置项的梯度为
-\begin{equation*}
-    \frac{\partial L(\hat{y}, y)}{\partial \boldsymbol{b}^{(l)}} = \deta^{(l)}.
-\end{equation*}
-
-这说明第 $l$ 层参数更新所需的信息非常直接: 一部分来自上一层的激活值 $\boldsymbol{a}^{(l-1)}$, 另一部分来自当前层的误差项 $\deta^{(l)}$. 训练时只要从输出层开始逐层向前计算这些误差项, 就能得到各层参数的梯度, 这正是反向传播算法的核心思想. 
 
 \section{激活函数}
 
@@ -250,6 +226,47 @@ $ \sigma(x) $ 是各个分量恒正的向量, $ f'(w^\top \sigma(x)) $ 则可正
 \end{equation*}
 也就是说, 偏置项的梯度就是该层的误差项本身. 
 
+
+
+\subsection{权重矩阵 $\boldsymbol{W}^{(l)}$ 的梯度}
+
+
+根据链式法则, 有
+\begin{align*}
+    \frac{\partial L}{ \partial \boldsymbol{W}^{(l)}_{i j}} 
+    =
+    \frac{\partial \boldsymbol{z}^{(l)}}{\partial \boldsymbol{W}^{(l)}_{i j}} \frac{\partial L}{\partial \boldsymbol{z}^{(l)}} 
+    =
+    \frac{\partial \boldsymbol{z}^{(l)}}{\partial \boldsymbol{W}^{(l)}_{i j}}  \delta^{(l)}
+    .
+\end{align*}
+由于
+\begin{align*}
+     \frac{\partial \boldsymbol{z}^{(l)}}{\partial \boldsymbol{W}^{(l)}_{i j}} 
+     & =
+     \bigg( \frac{\partial z_k^{(l)}}{\partial W_{ij}^{(l)}} \bigg)_{k}
+     \\
+    & =
+    \bigg( \frac{\partial (\sum_{m} W_{km}^{(l)} a_m^{(l-1)} + b_k^{(l)})}{\partial W_{ij}^{(l)}} \bigg)_{k}
+    \\
+    & =
+    \bigg( a_j^{(l-1)} \delta_{ik} \bigg)_{k}
+    ,
+\end{align*}
+其中 $\delta_{ik}$ 是 Kronecker delta, 因此
+\begin{equation*}
+    \frac{\partial L}{\partial \boldsymbol{W}^{(l)}_{i j}} = a_j^{(l-1)} \delta_i^{(l)}.    
+\end{equation*}
+即
+\begin{align*}
+    \frac{\partial L}{\partial \boldsymbol{W}^{(l)}} 
+    = 
+    \delta^{(l)} (\boldsymbol{a}^{(l-1)})^\top
+    .
+\end{align*}
+
+这说明第 $l$ 层参数更新所需的信息非常直接: 一部分来自上一层的激活值 $\boldsymbol{a}^{(l-1)}$, 另一部分来自当前层的误差项 $\deta^{(l)}$. 训练时只要从输出层开始逐层向前计算这些误差项, 就能得到各层参数的梯度, 这正是反向传播算法的核心思想. 
+
 \subsection{误差项的递推公式}
 
 当前层误差项可以由下一层误差项反向递推得到:
@@ -273,6 +290,7 @@ $ \sigma(x) $ 是各个分量恒正的向量, $ f'(w^\top \sigma(x)) $ 则可正
     \deta^{(l)} = f_l'\left(\boldsymbol{z}^{(l)}\right) \odot \left( \left(\boldsymbol{W}^{(l+1)}\right)^\top \deta^{(l+1)} \right).
 \end{equation*}
 其中 $\odot$ 表示 Hadamard 乘积. 该公式说明: 当前层的误差由下一层误差经过权重转置映射回本层, 再与本层激活函数的导数逐元素相乘得到. 
+
 
 \section{计算图与自动微分}
 
