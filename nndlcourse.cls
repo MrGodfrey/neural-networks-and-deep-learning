@@ -51,7 +51,6 @@
 \newtheorem{assumption}{Assumption}
 \numberwithin{assumption}{section}
 
-\newcommand{\deta}{\delta}
 
 \allowdisplaybreaks
 

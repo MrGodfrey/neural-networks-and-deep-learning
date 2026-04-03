@@ -214,7 +214,7 @@ $ \sigma(x) $ 是各个分量恒正的向量, $ f'(w^\top \sigma(x)) $ 则可正
 
 定义误差项
 \begin{equation*}
-    \deta^{(l)} = \frac{\partial L}{\partial \boldsymbol{z}^{(l)}},
+    \delta^{(l)} = \frac{\partial L}{\partial \boldsymbol{z}^{(l)}},
 \end{equation*}
 由于
 \begin{equation*}
@@ -222,7 +222,7 @@ $ \sigma(x) $ 是各个分量恒正的向量, $ f'(w^\top \sigma(x)) $ 则可正
 \end{equation*}
 其中 $I_{M_l}$ 为 $M_l \times M_l$ 的单位矩阵, 因此偏置的梯度为
 \begin{equation*}
-    \frac{\partial L}{\partial \boldsymbol{b}^{(l)}} = \frac{\partial \boldsymbol{z}^{(l)}}{\partial \boldsymbol{b}^{(l)}} \frac{\partial L}{\partial \boldsymbol{z}^{(l)}} = I_{M_l}\deta^{(l)} = \deta^{(l)}.
+    \frac{\partial L}{\partial \boldsymbol{b}^{(l)}} = \frac{\partial \boldsymbol{z}^{(l)}}{\partial \boldsymbol{b}^{(l)}} \frac{\partial L}{\partial \boldsymbol{z}^{(l)}} = I_{M_l}\delta^{(l)} = \delta^{(l)}.
 \end{equation*}
 也就是说, 偏置项的梯度就是该层的误差项本身. 
 
@@ -265,13 +265,13 @@ $ \sigma(x) $ 是各个分量恒正的向量, $ f'(w^\top \sigma(x)) $ 则可正
     .
 \end{align*}
 
-这说明第 $l$ 层参数更新所需的信息非常直接: 一部分来自上一层的激活值 $\boldsymbol{a}^{(l-1)}$, 另一部分来自当前层的误差项 $\deta^{(l)}$. 训练时只要从输出层开始逐层向前计算这些误差项, 就能得到各层参数的梯度, 这正是反向传播算法的核心思想. 
+这说明第 $l$ 层参数更新所需的信息非常直接: 一部分来自上一层的激活值 $\boldsymbol{a}^{(l-1)}$, 另一部分来自当前层的误差项 $\delta^{(l)}$. 训练时只要从输出层开始逐层向前计算这些误差项, 就能得到各层参数的梯度, 这正是反向传播算法的核心思想. 
 
 \subsection{误差项的递推公式}
 
 当前层误差项可以由下一层误差项反向递推得到:
 \begin{equation*}
-    \deta^{(l)} = \frac{\partial L}{\partial \boldsymbol{z}^{(l)}} = \frac{\partial \boldsymbol{a}^{(l)}}{\partial \boldsymbol{z}^{(l)}} \frac{\partial \boldsymbol{z}^{(l+1)}}{\partial \boldsymbol{a}^{(l)}} \deta^{(l+1)}.
+    \delta^{(l)} = \frac{\partial L}{\partial \boldsymbol{z}^{(l)}} = \frac{\partial \boldsymbol{a}^{(l)}}{\partial \boldsymbol{z}^{(l)}} \frac{\partial \boldsymbol{z}^{(l+1)}}{\partial \boldsymbol{a}^{(l)}} \delta^{(l+1)}.
 \end{equation*}
 其中, 激活函数对输入的导数矩阵为
 \begin{equation*}
@@ -287,7 +287,7 @@ $ \sigma(x) $ 是各个分量恒正的向量, $ f'(w^\top \sigma(x)) $ 则可正
 \end{equation*}
 于是得到反向传播的核心递推关系
 \begin{equation*}
-    \deta^{(l)} = f_l'\left(\boldsymbol{z}^{(l)}\right) \odot \left( \left(\boldsymbol{W}^{(l+1)}\right)^\top \deta^{(l+1)} \right).
+    \delta^{(l)} = f_l'\left(\boldsymbol{z}^{(l)}\right) \odot \left( \left(\boldsymbol{W}^{(l+1)}\right)^\top \delta^{(l+1)} \right).
 \end{equation*}
 其中 $\odot$ 表示 Hadamard 乘积. 该公式说明: 当前层的误差由下一层误差经过权重转置映射回本层, 再与本层激活函数的导数逐元素相乘得到. 
 
