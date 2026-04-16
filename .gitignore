@@ -150,9 +150,8 @@ Icon?
 .Trashes
 __MACOSX/
 
-**/.hidden
 
-labs/实验1-PyTorch 基础与线性模型/data
+2025-实验1-PyTorch 基础与线性模型/data
 
 # TeX / LaTeX auxiliary files
 *.aux
