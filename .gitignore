@@ -130,7 +130,7 @@ mlruns/
 *.ico
 
 # PDF files
-*.pdf
+# *.pdf
 
 
 # Downloaded dataset cache for experiment 1
