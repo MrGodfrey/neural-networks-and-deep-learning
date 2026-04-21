@@ -16,9 +16,17 @@
 \RequirePackage{euscript}
 \RequirePackage{makeidx}
 \RequirePackage{color}
+\RequirePackage{tikz}
 \RequirePackage{mathrsfs}
 \RequirePackage[numbers,sort&compress]{natbib}
 \RequirePackage{hyperref}
+\usetikzlibrary{calc,positioning,decorations.pathreplacing}
+\tikzset{
+    blk/.style={draw=black, line width=1.1pt},
+    blu/.style={draw=blue!70, line width=1.1pt},
+    txt/.style={font=\large},
+    smalltxt/.style={font=\normalsize},
+}
 \hypersetup{
     colorlinks=true,
     linkcolor=blue,
