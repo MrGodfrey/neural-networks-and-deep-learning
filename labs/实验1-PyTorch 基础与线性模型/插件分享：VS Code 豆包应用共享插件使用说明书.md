@@ -1,5 +1,7 @@
 # VS Code 豆包应用共享插件使用说明书
 
+本文内容来自 [@Xxxx37](https://github.com/Xxxx37) 的分享，感谢他的贡献。
+
 ## 一、插件概述
 
 豆包应用共享插件（Doubao App Share VS Code Plugin）是字节跳动为 VS Code 开发的官方扩展，需要配合豆包电脑版客户端使用，不能只使用网页版豆包。
