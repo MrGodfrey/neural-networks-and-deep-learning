@@ -1,6 +1,6 @@
 # VS Code 豆包应用共享插件使用说明书
 
-本文内容来自 [@Xxxx37](https://github.com/Xxxx37) 的分享，感谢他的贡献。
+本文内容来自 [@Xxxx37](https://github.com/Xxxx37) 的分享，感谢 TA 的贡献。
 
 ## 一、插件概述
 
