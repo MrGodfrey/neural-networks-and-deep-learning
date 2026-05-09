@@ -1,0 +1,478 @@
+\documentclass{../../nndlcourse}
+
+\begin{document}
+
+\title{实验2 - 全连接神经网络}
+\author{数据科学与大数据技术专业}
+\date{}
+\maketitle
+
+
+% ============================================================
+\section{实验目标}
+% ============================================================
+\begin{itemize}
+    \item 理解全连接神经网络中层、参数、激活值、梯度和缓存(\texttt{cache})的表示方式.
+    \item 使用 NumPy 从零实现两层神经网络和 $L$ 层深度神经网络的核心模块.
+    \item 掌握 \texttt{LINEAR}、\texttt{ReLU}、\texttt{Sigmoid}、二元交叉熵、反向传播和梯度下降之间的组合关系.
+    \item 能够将模块化函数组合成完整训练循环, 完成猫/非猫图像二分类任务.
+    \item 比较 Logistic 回归、两层网络和多层网络在图像分类任务上的表现差异, 理解网络深度对表达能力和过拟合风险的影响.
+    \item 训练学生在完成代码填空时记录调试过程、实验现象和 AI 辅助学习过程.
+\end{itemize}
+
+
+% ============================================================
+\section{实验环境}
+% ============================================================
+\begin{itemize}
+    \item 操作系统: Windows / Linux / macOS
+    \item Python 3.7 及以上
+    \item 主要依赖库: \texttt{numpy}、\texttt{matplotlib}、\texttt{h5py}
+    \item 推荐开发环境: Jupyter Notebook 或 VS Code
+    \item 实验文件:
+    \begin{itemize}
+        \item \texttt{W4A1/Building\_your\_Deep\_Neural\_Network\_Step\_by\_Step.ipynb}
+        \item \texttt{W4A2/Deep Neural Network - Application.ipynb}
+    \end{itemize}
+\end{itemize}
+
+如本地环境缺少依赖, 可在终端中执行:
+\begin{verbatim}
+pip install numpy matplotlib h5py
+\end{verbatim}
+若使用 Anaconda, 可执行:
+\begin{verbatim}
+conda install numpy matplotlib h5py
+\end{verbatim}
+
+
+% ============================================================
+\section{背景知识}
+% ============================================================
+
+\subsection{全连接神经网络}
+
+全连接神经网络(Fully Connected Neural Network)由若干线性层和非线性激活函数交替组成. 对第 $l$ 层, 若上一层激活值为 $A^{[l-1]}$, 则该层的线性变换与激活为:
+\begin{align}
+    Z^{[l]} &= W^{[l]}A^{[l-1]} + b^{[l]} \\
+    A^{[l]} &= g^{[l]}\left(Z^{[l]}\right)
+\end{align}
+其中 $W^{[l]}$ 为权重矩阵, $b^{[l]}$ 为偏置向量, $g^{[l]}$ 为激活函数. 输入层记为 $A^{[0]}=X$.
+
+本实验采用的二分类网络结构为:
+\begin{align}
+    [\mathrm{LINEAR} \to \mathrm{ReLU}]^{\times(L-1)}
+    \to \mathrm{LINEAR} \to \mathrm{Sigmoid}
+\end{align}
+隐藏层使用 ReLU 引入非线性, 输出层使用 Sigmoid 将输出映射到 $[0,1]$ 区间, 表示样本属于正类的概率.
+
+\subsection{符号与张量形状}
+
+本实验约定一个数据矩阵中每一列表示一个样本. 若共有 $m$ 个样本, 输入特征维度为 $n_x$, 则:
+\begin{align}
+    X \in \mathbb{R}^{n_x \times m}, \quad
+    Y \in \mathbb{R}^{1 \times m}
+\end{align}
+对于第 $l$ 层, 若该层神经元个数为 $n^{[l]}$, 则:
+\begin{align}
+    W^{[l]} &\in \mathbb{R}^{n^{[l]} \times n^{[l-1]}} \\
+    b^{[l]} &\in \mathbb{R}^{n^{[l]} \times 1} \\
+    Z^{[l]}, A^{[l]} &\in \mathbb{R}^{n^{[l]} \times m}
+\end{align}
+代码实现时要特别检查矩阵乘法方向. 本实验中应使用:
+\begin{align}
+    Z = \texttt{np.dot}(W,A_{\mathrm{prev}})+b
+\end{align}
+即由 $W$ 左乘上一层激活值, 而不是让 $A_{\mathrm{prev}}$ 左乘 $W$.
+
+\subsection{激活函数}
+
+\textbf{Sigmoid 函数}常用于二分类输出层:
+\begin{align}
+    \sigma(z) = \frac{1}{1+\exp(-z)}
+\end{align}
+当 $\sigma(z)>0.5$ 时, 通常预测为正类; 否则预测为负类.
+
+\textbf{ReLU 函数}常用于隐藏层:
+\begin{align}
+    \operatorname{ReLU}(z) = \max(0,z)
+\end{align}
+其导数为:
+\begin{align}
+    \operatorname{ReLU}'(z) =
+    \begin{cases}
+        1, & z>0 \\
+        0, & z\le 0
+    \end{cases}
+\end{align}
+ReLU 计算简单, 能缓解深层网络中 Sigmoid / Tanh 容易出现的梯度消失问题, 但若学习率过大或初始化不合适, 也可能出现部分神经元长期输出为 0 的现象.
+
+\subsection{二元交叉熵损失}
+
+对二分类任务, 网络最终输出 $A^{[L]}=\hat{Y}$, 其中 $\hat{y}^{(i)}$ 表示第 $i$ 个样本属于正类的概率. 二元交叉熵损失为:
+\begin{align}
+    \mathcal{J}(\hat{Y},Y)
+    = -\frac{1}{m}\sum_{i=1}^{m}
+    \left[
+        y^{(i)}\log \hat{y}^{(i)}
+        + \left(1-y^{(i)}\right)\log\left(1-\hat{y}^{(i)}\right)
+    \right]
+\end{align}
+实现时应保证 $\hat{Y}$ 与 $Y$ 的形状一致, 通常均为 $(1,m)$. 若预测概率非常接近 0 或 1, 可能出现 $\log(0)$ 的数值问题; 在工程实现中可使用裁剪或更稳定的损失函数形式.
+
+\subsection{前向传播与缓存}
+
+前向传播不仅要计算输出, 还要保存反向传播需要的中间量. 本实验中每个线性加激活模块保存:
+\begin{align}
+    \texttt{linear\_cache} &= (A^{[l-1]}, W^{[l]}, b^{[l]}) \\
+    \texttt{activation\_cache} &= Z^{[l]}
+\end{align}
+完整的 $L$ 层前向传播会把每一层的 \texttt{cache} 按顺序存入列表 \texttt{caches}. 反向传播时再从最后一层开始反向读取这些缓存.
+
+\subsection{反向传播}
+
+反向传播利用链式法则从损失函数对输出的梯度开始, 逐层计算各参数梯度. 对线性部分:
+\begin{align}
+    dW^{[l]} &= \frac{1}{m}dZ^{[l]}\left(A^{[l-1]}\right)^T \\
+    db^{[l]} &= \frac{1}{m}\sum_{i=1}^{m}dZ^{[l](i)} \\
+    dA^{[l-1]} &= \left(W^{[l]}\right)^T dZ^{[l]}
+\end{align}
+对激活函数部分:
+\begin{align}
+    dZ^{[l]} = dA^{[l]} \odot g'^{[l]}\left(Z^{[l]}\right)
+\end{align}
+其中 $\odot$ 表示逐元素乘法. 对输出层 Sigmoid + 交叉熵, 首先计算:
+\begin{align}
+    dA^{[L]} =
+    -\frac{Y}{A^{[L]}} + \frac{1-Y}{1-A^{[L]}}
+\end{align}
+然后再调用 Sigmoid 的反向传播函数得到 $dZ^{[L]}$.
+
+\subsection{参数初始化与梯度下降}
+
+训练前必须打破神经元之间的对称性. 若所有权重初始化为 0, 同一层神经元会得到相同梯度, 无法学习不同特征. 本实验第一部分的评分函数要求:
+\begin{align}
+    W^{[l]} \sim \mathcal{N}(0,1)\times 0.01,\quad b^{[l]}=\boldsymbol{0}
+\end{align}
+在应用部分, 深层网络可使用按输入维度缩放的随机初始化:
+\begin{align}
+    W^{[l]} \sim \frac{\mathcal{N}(0,1)}{\sqrt{n^{[l-1]}}}
+\end{align}
+参数更新使用普通梯度下降:
+\begin{align}
+    W^{[l]} &\leftarrow W^{[l]} - \alpha dW^{[l]} \\
+    b^{[l]} &\leftarrow b^{[l]} - \alpha db^{[l]}
+\end{align}
+其中 $\alpha$ 为学习率. 学习率过小会导致收敛慢, 过大则可能导致损失震荡甚至发散.
+
+\subsection{图像分类数据预处理}
+
+猫/非猫数据集中每张图像大小为 $64\times64\times3$. 神经网络输入需要将其展平为列向量:
+\begin{align}
+    64\times64\times3 = 12288
+\end{align}
+因此训练集输入形状应整理为:
+\begin{align}
+    X_{\mathrm{train}} \in \mathbb{R}^{12288\times m_{\mathrm{train}}}
+\end{align}
+同时, 像素值从 $[0,255]$ 归一化到 $[0,1]$:
+\begin{align}
+    X \leftarrow \frac{X}{255}
+\end{align}
+归一化可以让各特征处在相近尺度上, 通常能加快梯度下降收敛.
+
+
+% ============================================================
+\section{实验步骤}
+% ============================================================
+
+\subsection*{实验2.1: 深层神经网络模块化实现(W4A1)}
+
+\textbf{实验目标:}
+\begin{itemize}
+    \item 在 \texttt{W4A1} Notebook 中逐个实现深度神经网络的基础函数.
+    \item 完成后使用 \texttt{public\_tests.py} 中的单元测试检查结果.
+\end{itemize}
+
+\subsubsection*{2.1.1 参数初始化}
+
+\textbf{练习 1: \texttt{initialize\_parameters}}
+
+实现两层神经网络的初始化函数. 网络结构为输入层 $\to$ 隐藏层 $\to$ 输出层, 参数形状如下:
+\begin{itemize}
+    \item $W^{[1]}\in\mathbb{R}^{n_h\times n_x}$, $b^{[1]}\in\mathbb{R}^{n_h\times1}$
+    \item $W^{[2]}\in\mathbb{R}^{n_y\times n_h}$, $b^{[2]}\in\mathbb{R}^{n_y\times1}$
+\end{itemize}
+实现要点:
+\begin{itemize}
+    \item 使用 \texttt{np.random.seed(1)} 保证测试结果可复现.
+    \item 权重使用 \texttt{np.random.randn(...)*0.01}.
+    \item 偏置使用 \texttt{np.zeros(...)}.
+\end{itemize}
+
+\textbf{练习 2: \texttt{initialize\_parameters\_deep}}
+
+将初始化推广到任意层数. 输入 \texttt{layer\_dims} 是一个列表, 如 \texttt{[5,4,3]} 表示输入层 5 维、隐藏层 4 个神经元、输出层 3 维. 对第 $l$ 层:
+\begin{align}
+    W^{[l]}\in\mathbb{R}^{\texttt{layer\_dims}[l]\times \texttt{layer\_dims}[l-1]},\quad
+    b^{[l]}\in\mathbb{R}^{\texttt{layer\_dims}[l]\times1}
+\end{align}
+参数字典键名统一为 \texttt{W1}、\texttt{b1}、$\ldots$、\texttt{WL}、\texttt{bL}.
+
+\subsubsection*{2.1.2 前向传播模块}
+
+\textbf{练习 3: \texttt{linear\_forward}}
+
+实现单层线性变换:
+\begin{align}
+    Z = WA + b
+\end{align}
+函数返回 \texttt{Z} 以及 \texttt{cache=(A,W,b)}.
+
+\textbf{练习 4: \texttt{linear\_activation\_forward}}
+
+将线性变换和激活函数组合为一个模块:
+\begin{align}
+    A = g(WA_{\mathrm{prev}}+b)
+\end{align}
+本实验只需要支持两种字符串参数:
+\begin{itemize}
+    \item \texttt{"relu"}: 隐藏层激活函数.
+    \item \texttt{"sigmoid"}: 输出层激活函数.
+\end{itemize}
+函数返回激活值 \texttt{A} 和 \texttt{cache=(linear\_cache, activation\_cache)}.
+
+\textbf{练习 5: \texttt{L\_model\_forward}}
+
+实现完整的 $L$ 层前向传播:
+\begin{align}
+    [\mathrm{LINEAR}\to\mathrm{ReLU}]^{\times(L-1)}
+    \to \mathrm{LINEAR}\to\mathrm{Sigmoid}
+\end{align}
+实现时先循环处理前 $L-1$ 层 ReLU, 最后单独处理 Sigmoid 输出层. 函数应返回最终概率 \texttt{AL} 和包含所有层缓存的 \texttt{caches}.
+
+\subsubsection*{2.1.3 损失函数}
+
+\textbf{练习 6: \texttt{compute\_cost}}
+
+实现二元交叉熵损失:
+\begin{align}
+    \mathcal{J} =
+    -\frac{1}{m}\sum_{i=1}^{m}
+    \left[
+        y^{(i)}\log a^{[L](i)}
+        + (1-y^{(i)})\log(1-a^{[L](i)})
+    \right]
+\end{align}
+注意返回值应为标量, 可使用 \texttt{np.squeeze(cost)} 去掉多余维度.
+
+\subsubsection*{2.1.4 反向传播模块}
+
+\textbf{练习 7: \texttt{linear\_backward}}
+
+已知当前层 $dZ$, 实现线性部分反向传播:
+\begin{align}
+    dW &= \frac{1}{m}dZ A_{\mathrm{prev}}^T \\
+    db &= \frac{1}{m}\sum dZ \\
+    dA_{\mathrm{prev}} &= W^T dZ
+\end{align}
+计算 \texttt{db} 时应使用 \texttt{axis=1, keepdims=True}, 以保持列向量形状.
+
+\textbf{练习 8: \texttt{linear\_activation\_backward}}
+
+根据激活函数类型选择对应的反向函数:
+\begin{itemize}
+    \item \texttt{"relu"}: 调用 \texttt{relu\_backward}.
+    \item \texttt{"sigmoid"}: 调用 \texttt{sigmoid\_backward}.
+\end{itemize}
+得到 $dZ$ 后, 再调用 \texttt{linear\_backward}. 该函数返回 \texttt{dA\_prev}、\texttt{dW}、\texttt{db}.
+
+\textbf{练习 9: \texttt{L\_model\_backward}}
+
+实现完整的 $L$ 层反向传播. 实现顺序为:
+\begin{enumerate}
+    \item 根据二元交叉熵计算 $dA^{[L]}$.
+    \item 对最后一层调用 Sigmoid 反向传播.
+    \item 从后向前遍历其余层, 对每一层调用 ReLU 反向传播.
+    \item 将所有梯度存入 \texttt{grads} 字典, 键名如 \texttt{dA0}、\texttt{dW1}、\texttt{db1}.
+\end{enumerate}
+
+\subsubsection*{2.1.5 参数更新}
+
+\textbf{练习 10: \texttt{update\_parameters}}
+
+使用梯度下降更新每一层参数:
+\begin{align}
+    W^{[l]} &\leftarrow W^{[l]}-\alpha dW^{[l]} \\
+    b^{[l]} &\leftarrow b^{[l]}-\alpha db^{[l]}
+\end{align}
+Notebook 中建议对输入参数字典做深拷贝, 避免测试时原始对象被意外修改.
+
+\subsection*{实验2.2: 猫/非猫图像分类应用(W4A2)}
+
+\textbf{实验目标: }使用实验2.1中实现的基础函数, 构建完整的训练循环, 在真实图像数据集上比较两层网络和 $L$ 层深度网络.
+
+\subsubsection*{2.2.1 数据加载与预处理}
+
+使用 \texttt{load\_data()} 加载 H5 数据集. 数据包含训练图像、训练标签、测试图像、测试标签以及类别名称. 每张图像为 $64\times64\times3$ 的 RGB 图像.
+
+需要完成的预处理:
+\begin{itemize}
+    \item 查看训练集和测试集规模, 确认标签形状.
+    \item 将图像从 \texttt{(m, 64, 64, 3)} 展平并转置为 \texttt{(12288, m)}.
+    \item 将像素值除以 255, 归一化到 $[0,1]$.
+    \item 随机查看若干图像, 理解数据集中猫与非猫样本的差异.
+\end{itemize}
+
+\subsubsection*{2.2.2 两层神经网络}
+
+\textbf{练习 1: \texttt{two\_layer\_model}}
+
+构建两层神经网络:
+\begin{align}
+    \mathrm{LINEAR}\to\mathrm{ReLU}\to\mathrm{LINEAR}\to\mathrm{Sigmoid}
+\end{align}
+推荐维度设置:
+\begin{align}
+    n_x=12288,\quad n_h=7,\quad n_y=1
+\end{align}
+训练循环包含:
+\begin{enumerate}
+    \item 调用 \texttt{initialize\_parameters} 初始化参数.
+    \item 调用 \texttt{linear\_activation\_forward} 完成两层前向传播.
+    \item 调用 \texttt{compute\_cost} 计算损失.
+    \item 手动计算输出层初始梯度 $dA^{[2]}$.
+    \item 调用 \texttt{linear\_activation\_backward} 依次完成输出层和隐藏层反向传播.
+    \item 调用 \texttt{update\_parameters} 更新参数.
+    \item 每 100 次迭代记录一次损失, 用于绘制损失曲线.
+\end{enumerate}
+参考设置为学习率 \texttt{0.0075}, 训练 \texttt{2500} 次迭代. Notebook 中测试集准确率通常约为 $72\%$.
+
+\subsubsection*{2.2.3 L 层深度神经网络}
+
+\textbf{练习 2: \texttt{L\_layer\_model}}
+
+构建更深的网络:
+\begin{align}
+    [\mathrm{LINEAR}\to\mathrm{ReLU}]^{\times(L-1)}
+    \to \mathrm{LINEAR}\to\mathrm{Sigmoid}
+\end{align}
+Notebook 中推荐的层维度为:
+\begin{align}
+    [12288, 20, 7, 5, 1]
+\end{align}
+训练循环比两层模型更简洁, 因为完整前向传播和反向传播已经封装为:
+\begin{itemize}
+    \item \texttt{L\_model\_forward(X, parameters)}
+    \item \texttt{L\_model\_backward(AL, Y, caches)}
+\end{itemize}
+参考设置同样为学习率 \texttt{0.0075}, 训练 \texttt{2500} 次迭代. Notebook 中测试集准确率通常约为 $80\%$, 高于两层网络.
+
+\subsubsection*{2.2.4 结果分析}
+
+完成训练后, 至少记录以下结果:
+\begin{itemize}
+    \item 两层网络训练集准确率与测试集准确率.
+    \item $L$ 层网络训练集准确率与测试集准确率.
+    \item 两个模型的损失曲线是否稳定下降.
+    \item 错误分类图片的典型情况, 如背景干扰、光线过暗、猫的姿态特殊、猫在图中占比过小等.
+\end{itemize}
+
+分析时要注意: 若训练集准确率明显高于测试集准确率, 说明模型可能已经对训练样本产生过拟合. 更深的网络表达能力更强, 但并不保证测试集准确率无限提升.
+
+\subsubsection*{2.2.5 自定义图片测试(选做)}
+
+可将自己的图片放入 \texttt{images/} 文件夹, 修改 Notebook 中的 \texttt{my\_image} 和 \texttt{my\_label\_y}, 使用训练好的模型预测图片中是否有猫. 图片应尽量处理为 RGB 格式, 并按照 Notebook 中的方式缩放、展平、归一化.
+
+
+% ============================================================
+\section{核心函数对照总结}
+% ============================================================
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{函数} & \textbf{所在实验} & \textbf{作用} \\
+\hline
+\texttt{initialize\_parameters} & W4A1 / W4A2 & 初始化两层网络参数 \\
+\texttt{initialize\_parameters\_deep} & W4A1 / W4A2 & 初始化 $L$ 层网络参数 \\
+\texttt{linear\_forward} & W4A1 & 计算 $Z=WA+b$ \\
+\texttt{linear\_activation\_forward} & W4A1 & 组合线性层与激活函数 \\
+\texttt{L\_model\_forward} & W4A1 & 完整 $L$ 层前向传播 \\
+\texttt{compute\_cost} & W4A1 & 计算二元交叉熵损失 \\
+\texttt{linear\_backward} & W4A1 & 计算线性层梯度 \\
+\texttt{linear\_activation\_backward} & W4A1 & 组合激活反向与线性反向 \\
+\texttt{L\_model\_backward} & W4A1 & 完整 $L$ 层反向传播 \\
+\texttt{update\_parameters} & W4A1 & 梯度下降更新参数 \\
+\texttt{two\_layer\_model} & W4A2 & 训练两层猫/非猫分类器 \\
+\texttt{L\_layer\_model} & W4A2 & 训练 $L$ 层猫/非猫分类器 \\
+\hline
+\end{tabular}
+\end{center}
+
+
+% ============================================================
+\section{实验作业}
+% ============================================================
+
+\begin{enumerate}
+    \item 完成 \texttt{W4A1} Notebook 中所有代码填空, 包括 10 个核心函数, 并确保所有公开测试通过.
+    \item 完成 \texttt{W4A2} Notebook 中 \texttt{two\_layer\_model} 与 \texttt{L\_layer\_model} 的实现, 能够完成训练、预测和损失曲线绘制.
+    \item 在实验记录中比较两层网络和 $L$ 层网络的训练集准确率、测试集准确率与损失下降曲线.
+    \item 分析至少 3 张错误分类图片, 说明可能的错误原因.
+    \item 回答以下思考题:
+    \begin{enumerate}
+        \item 为什么隐藏层使用 ReLU, 输出层使用 Sigmoid?
+        \item 为什么权重不能全部初始化为 0?
+        \item 为什么图像输入要展平并除以 255?
+        \item 如果训练集准确率接近 100\%, 但测试集准确率明显较低, 说明了什么?
+        \item 继续增加网络层数是否一定能提高测试准确率? 为什么?
+    \end{enumerate}
+    \item \textbf{选做}: 调整隐藏层维度、学习率或训练迭代次数, 观察对训练稳定性和测试准确率的影响.
+    \item \textbf{选做}: 尝试使用 Tanh 替换部分隐藏层 ReLU, 比较损失曲线和准确率变化.
+    \item \textbf{选做}: 使用自己的图片测试模型, 并记录预测结果与分析.
+\end{enumerate}
+
+
+% ============================================================
+\section{提交要求}
+% ============================================================
+
+请在提交前检查材料是否齐全. 本次实验提交内容包括 Notebook 源文件和实验过程记录. 本课程作业上传只接受文本文件, 不接受 PDF、Word 文档、图片、截图、压缩包等二进制文件. 采用这一规则, 一方面是为了引入 AI 辅助评阅, 另一方面也是希望大家养成用清晰文本表达实验过程和结论的习惯.
+
+如果实验报告确实需要配图, 请优先思考是否可以用文字、公式或表格表达清楚; 若必须插图, 请将图片放入 Notebook 中, 形成一份完整的 \texttt{.ipynb} 实验报告. 若使用 \LaTeX{} 或 Word 撰写报告, 请使用 \texttt{pandoc} 等工具转换为 \texttt{.md} 或 \texttt{.txt} 等文本格式后再提交, 不要提交 \texttt{.pdf} 或 \texttt{.docx}.
+
+\begin{enumerate}
+    \item \textbf{Jupyter Notebook 文件(.ipynb)}
+    \begin{enumerate}
+        \item 必交内容包括 \texttt{W4A1} 和 \texttt{W4A2} 对应的 Notebook 文件.
+        \item Notebook 中应包含完整代码、运行结果、损失曲线、准确率输出和必要的分析文字.
+        \item 只需提交 Notebook 源文件, 不需要额外导出为 PDF、HTML、Python 脚本、Word 文档、截图或图片文件.
+        \item 若完成选做内容, 请在 Notebook 中保留相关代码、运行结果和简要说明.
+    \end{enumerate}
+    \item \textbf{实验过程与 AI 互动记录文本文件(.md / .txt)}
+    \begin{enumerate}
+        \item 必须额外提交一份文本文件, 作为实验过程与 AI 互动记录, 推荐使用 \texttt{.md} 或 \texttt{.txt}.
+        \item 记录内容至少包括: 查阅了哪些资料、向 AI 提出了哪些问题、如何继续思考、调试、修改代码或完善实验分析.
+        \item 不要把 AI 的回复原文放入记录中, 也不要复制粘贴大段代码; 记录应只包含你自己写的内容, 包括你的问题、判断、尝试、修改思路和必要的简短总结.
+        \item 记录应尽量按时间顺序整理, 不要只保留最终答案.
+        \item 建议文件命名为 \texttt{AI问答记录.md} 或 \texttt{实验过程记录.md}.
+    \end{enumerate}
+\end{enumerate}
+
+
+% ============================================================
+\section{关于作业的重要说明}
+% ============================================================
+
+本实验的核心目标不是得到一份表面上完整的代码, 而是理解深度神经网络训练过程中的每一个基础模块. 因此, 代码填空部分应由学生自己完成, 并通过调试和单元测试逐步确认正确性.
+
+可以使用 AI 工具辅助理解概念、解释报错、查询 API 用法或检查矩阵维度, 但不得直接让 AI 代写全部必做代码后不加理解地提交. 若使用 AI 工具, 必须在文本记录中如实写明自己的提问、自己的判断和后续修改过程.
+
+若最终提交材料只有完整代码, 缺少实验过程、运行结果、调试记录和必要分析, 将难以证明实验由本人独立完成, 作业评分会受到明显影响.
+
+AI 互动记录应只保留学生自己写的内容. 不要粘贴 AI 的完整回复, 不要粘贴复制来的大段代码, 也不要把聊天记录原样导出后提交. 记录的重点是说明你如何提出问题.
+
+选做内容可以更自由地使用 AI 工具, 不需记录使用过程。
+
+\end{document}
