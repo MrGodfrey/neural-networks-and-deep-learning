@@ -1,0 +1,455 @@
+\documentclass{../../nndlcourse}
+
+\begin{document}
+
+\title{实验5 - 网络优化与正则化}
+\author{数据科学与大数据技术专业}
+\date{}
+\maketitle
+
+
+% ============================================================
+\section{实验目标}
+% ============================================================
+\begin{itemize}
+    \item 理解参数初始化对深层网络训练稳定性和收敛速度的影响.
+    \item 掌握零初始化、大随机初始化和 He 初始化的实现方式, 并能解释它们在 ReLU 网络中的差异.
+    \item 掌握 L2 正则化和 Dropout 的基本思想, 能够在损失函数、前向传播和反向传播中正确加入正则化项.
+    \item 使用梯度检验验证反向传播代码, 理解数值梯度、解析梯度和相对误差之间的关系.
+    \item 手动实现 Mini-batch 梯度下降、Momentum、Adam 和学习率衰减, 比较不同优化方法的训练现象.
+    \item 能够根据损失曲线、准确率、决策边界和调试记录分析模型是否欠拟合、过拟合或优化困难.
+\end{itemize}
+
+
+% ============================================================
+\section{实验环境}
+% ============================================================
+\begin{itemize}
+    \item 操作系统: Windows / Linux / macOS
+    \item Python 3.7 及以上
+    \item 主要依赖库: \texttt{numpy}、\texttt{matplotlib}、\texttt{scipy}、\texttt{scikit-learn}、\texttt{h5py}
+    \item 推荐开发环境: Jupyter Notebook 或 VS Code
+    \item 实验文件:
+    \begin{itemize}
+        \item \texttt{W1A1/Initialization.ipynb}
+        \item \texttt{W1A2/Regularization.ipynb}
+        \item \texttt{W1A3/Gradient\_Checking.ipynb}
+        \item \texttt{W2A1/Optimization\_methods.ipynb}
+    \end{itemize}
+\end{itemize}
+
+如本地环境缺少依赖, 可在终端中执行:
+\begin{verbatim}
+pip install numpy matplotlib scipy scikit-learn h5py jupyter ipykernel
+\end{verbatim}
+若使用 Conda, 可执行:
+\begin{verbatim}
+conda install numpy matplotlib scipy scikit-learn h5py jupyter ipykernel
+\end{verbatim}
+
+
+% ============================================================
+\section{背景知识}
+% ============================================================
+
+\subsection{训练深层网络为什么不只是写出反向传播}
+
+前面实验已经实现了全连接网络、卷积网络和循环网络的核心计算. 但真实训练中, 即使前向传播和反向传播公式正确, 模型也可能因为初始化不合适、过拟合、梯度实现错误或优化器选择不当而训练失败. 本实验集中处理这些``训练工程''问题.
+
+可以把一次可复现的训练实验拆成四个层次:
+\begin{enumerate}
+    \item \textbf{初始化}: 决定训练从哪里开始, 影响信号和梯度在网络中的尺度.
+    \item \textbf{正则化}: 决定模型是否更偏向简单、稳定和可泛化的解.
+    \item \textbf{梯度检验}: 验证自己写的反向传播是否真的等价于损失函数的导数.
+    \item \textbf{优化算法}: 决定参数如何利用当前梯度和历史梯度向更低损失移动.
+\end{enumerate}
+本实验的重点不是背诵公式, 而是把这些技巧放回训练现象中理解: 为什么损失不降、为什么测试集变差、为什么某个优化器更快, 以及如何用实验记录说明自己的判断.
+
+\subsection{参数初始化}
+
+神经网络训练从一组初始参数开始. 若同一层所有隐藏单元的权重完全相同, 它们在前向传播中得到相同激活, 在反向传播中得到相同梯度, 后续更新也会保持相同, 网络无法学习多样化特征. 这就是权重零初始化的问题. 偏置初始化为零通常可以接受, 因为权重的随机性已经打破了对称性.
+
+若权重初始化过大, 各层线性输出可能迅速放大, 使激活函数进入饱和区, 或让损失和梯度剧烈震荡. 若权重初始化过小, 信号在深层网络中逐层衰减, 梯度也可能变得很小. 因此, 初始化需要控制每层信号的方差.
+
+对使用 ReLU 激活的网络, 常用 He 初始化:
+\begin{align}
+    W^{[l]} \sim \mathcal{N}\!\left(0,\frac{2}{n^{[l-1]}}\right),
+    \quad
+    W^{[l]}=\texttt{np.random.randn}(\cdots)
+    \sqrt{\frac{2}{n^{[l-1]}}}.
+\end{align}
+其中 $n^{[l-1]}$ 是上一层神经元数量. 分子中的 2 与 ReLU 会将约一半负激活置零有关, 它用于补偿激活方差的下降.
+
+\subsection{正则化与泛化}
+
+当模型在训练集上表现很好, 但在测试集上明显变差时, 通常说明模型发生了过拟合. 正则化的目标不是让训练集损失最低, 而是让模型学到更平滑、更稳定、更能泛化的规律.
+
+L2 正则化在原始交叉熵损失外加入权重平方和惩罚:
+\begin{align}
+    J_{\mathrm{reg}} =
+    J_{\mathrm{data}}
+    + \frac{\lambda}{2m}\sum_l \left\|W^{[l]}\right\|_F^2 .
+\end{align}
+对应到反向传播, 每一层权重梯度需要额外加上:
+\begin{align}
+    dW^{[l]} \leftarrow dW^{[l]} + \frac{\lambda}{m}W^{[l]}.
+\end{align}
+偏置 $b$ 通常不做 L2 正则化, 因为偏置不直接控制输入特征的放大方向, 对模型复杂度的贡献也远小于权重矩阵.
+
+Dropout 在训练阶段随机关闭部分隐藏单元. 若 \texttt{keep\_prob} 表示保留概率, 常见的 inverted dropout 写法为:
+\begin{align}
+    D^{[l]} &= \mathbb{1}\left(\mathrm{rand}(A^{[l]}.shape)<\texttt{keep\_prob}\right),\\
+    A^{[l]} &\leftarrow \frac{A^{[l]}\odot D^{[l]}}{\texttt{keep\_prob}}.
+\end{align}
+除以 \texttt{keep\_prob} 是为了保持激活值的期望尺度不变. 测试阶段不能使用随机 Dropout, 应使用完整网络做预测.
+
+\subsection{梯度检验}
+
+反向传播代码容易出现维度、转置、符号或求和轴错误. 梯度检验使用中心差分近似某个参数的梯度:
+\begin{align}
+    \frac{\partial J}{\partial \theta_i}
+    \approx
+    \frac{J(\theta_i+\varepsilon)-J(\theta_i-\varepsilon)}
+    {2\varepsilon}.
+\end{align}
+将所有参数的数值梯度 \texttt{gradapprox} 与反向传播得到的梯度 \texttt{grad} 比较:
+\begin{align}
+    \mathrm{difference}
+    =
+    \frac{\left\|\texttt{gradapprox}-\texttt{grad}\right\|_2}
+    {\left\|\texttt{gradapprox}\right\|_2+\left\|\texttt{grad}\right\|_2}.
+\end{align}
+若差异小于 $2\times 10^{-7}$, 通常可以认为反向传播实现基本正确. 梯度检验计算代价很高, 只适合调试阶段使用, 不应放入每次训练迭代.
+
+\subsection{优化算法}
+
+普通梯度下降直接沿负梯度方向更新:
+\begin{align}
+    W^{[l]} \leftarrow W^{[l]}-\alpha dW^{[l]},
+    \quad
+    b^{[l]} \leftarrow b^{[l]}-\alpha db^{[l]}.
+\end{align}
+
+Mini-batch 梯度下降每次只使用一小批样本估计梯度, 在计算效率和梯度稳定性之间折中. Momentum 使用历史梯度的指数加权平均减少震荡:
+\begin{align}
+    v_{dW}^{[l]} &= \beta v_{dW}^{[l]} + (1-\beta)dW^{[l]},\\
+    W^{[l]} &\leftarrow W^{[l]}-\alpha v_{dW}^{[l]}.
+\end{align}
+
+Adam 同时维护一阶矩 $v$ 和二阶矩 $s$, 并进行偏差修正:
+\begin{align}
+    v_t &= \beta_1 v_{t-1}+(1-\beta_1)g_t,\\
+    s_t &= \beta_2 s_{t-1}+(1-\beta_2)g_t^2,\\
+    \hat{v}_t &= \frac{v_t}{1-\beta_1^t},
+    \quad
+    \hat{s}_t = \frac{s_t}{1-\beta_2^t},\\
+    \theta_t &= \theta_{t-1}
+    - \alpha\frac{\hat{v}_t}{\sqrt{\hat{s}_t}+\varepsilon}.
+\end{align}
+Momentum 与 Adam 都不会改变目标函数本身, 它们改变的是参数走向目标函数低谷的路径.
+
+
+% ============================================================
+\section{实验步骤}
+% ============================================================
+
+\subsection*{实验5.1: 参数初始化实验(W1A1)}
+
+\textbf{实验目标: }在二维数据集上训练三层全连接网络, 比较零初始化、大随机初始化和 He 初始化对收敛速度、损失曲线和决策边界的影响.
+
+网络结构为:
+\begin{align}
+    \mathrm{LINEAR}\to\mathrm{ReLU}\to
+    \mathrm{LINEAR}\to\mathrm{ReLU}\to
+    \mathrm{LINEAR}\to\mathrm{Sigmoid}.
+\end{align}
+Notebook 已提供训练函数 \texttt{model()}, 同学们需要补全三种初始化函数, 并用实验现象解释初始化为什么重要.
+
+\subsubsection*{5.1.1 零初始化}
+
+\textbf{练习 1: \texttt{initialize\_parameters\_zeros}}
+
+实现要点:
+\begin{itemize}
+    \item 对每一层 $l$, 使用 \texttt{np.zeros} 初始化 $W^{[l]}$ 和 $b^{[l]}$.
+    \item 参数字典键名为 \texttt{W1}、\texttt{b1}、\texttt{W2}、\texttt{b2} 等.
+    \item 观察训练结果, 说明为什么隐藏层神经元会保持相同表示.
+\end{itemize}
+分析时不要只写``准确率低'', 应明确指出: 权重完全相同会导致同一层神经元收到相同梯度, 从而无法打破对称性.
+
+\subsubsection*{5.1.2 大随机初始化}
+
+\textbf{练习 2: \texttt{initialize\_parameters\_random}}
+
+实现要点:
+\begin{itemize}
+    \item 权重使用 \texttt{np.random.randn(...)*10} 生成, 这是故意放大的初始化.
+    \item 偏置仍初始化为零.
+    \item 每层开始前设置 \texttt{np.random.seed(l)}, 以保证测试结果可复现.
+    \item 观察损失曲线是否出现较大震荡、初始损失偏高或收敛缓慢.
+\end{itemize}
+该实验的目的不是推荐大随机初始化, 而是让同学们看到激活和梯度尺度失控时训练会变得不稳定.
+
+\subsubsection*{5.1.3 He 初始化}
+
+\textbf{练习 3: \texttt{initialize\_parameters\_he}}
+
+实现要点:
+\begin{itemize}
+    \item 权重缩放因子为 \texttt{np.sqrt(2. / layers\_dims[l-1])}.
+    \item 偏置初始化为零.
+    \item 比较 He 初始化与前两种初始化在收敛速度、最终损失和决策边界上的差异.
+\end{itemize}
+报告中应说明 He 初始化为什么适合 ReLU 网络, 而不是只给出代码.
+
+\subsection*{实验5.2: 正则化实验(W1A2)}
+
+\textbf{实验目标: }在二维数据上训练三层网络, 比较无正则化、L2 正则化和 Dropout 三种设置对过拟合的影响.
+
+网络结构为:
+\begin{align}
+    \mathrm{INPUT}(2)\to\mathrm{LINEAR}(20)\to\mathrm{ReLU}\to
+    \mathrm{LINEAR}(3)\to\mathrm{ReLU}\to
+    \mathrm{LINEAR}(1)\to\mathrm{Sigmoid}.
+\end{align}
+本实验应重点比较训练集准确率、测试集准确率和决策边界复杂度. 若训练集准确率很高但测试集较低, 应从过拟合角度解释.
+
+\subsubsection*{5.2.1 L2 正则化损失}
+
+\textbf{练习 1: \texttt{compute\_cost\_with\_regularization}}
+
+在原始交叉熵代价基础上加入 L2 正则化项:
+\begin{align}
+    \frac{\lambda}{2m}
+    \left(
+    \left\|W^{[1]}\right\|_F^2+
+    \left\|W^{[2]}\right\|_F^2+
+    \left\|W^{[3]}\right\|_F^2
+    \right).
+\end{align}
+实现时从 \texttt{parameters} 中取出 \texttt{W1}、\texttt{W2}、\texttt{W3}, 使用 \texttt{np.sum(np.square(W))} 计算平方和.
+
+\subsubsection*{5.2.2 L2 正则化反向传播}
+
+\textbf{练习 2: \texttt{backward\_propagation\_with\_regularization}}
+
+在标准反向传播结果上加入 L2 梯度:
+\begin{align}
+    dW^{[l]} \leftarrow dW^{[l]}+\frac{\lambda}{m}W^{[l]}.
+\end{align}
+\texttt{db1}、\texttt{db2}、\texttt{db3} 保持原有计算方式. 完成后使用 \texttt{lambd=0.7} 训练模型, 对比测试集准确率和决策边界.
+
+\subsubsection*{5.2.3 Dropout 前向传播}
+
+\textbf{练习 3: \texttt{forward\_propagation\_with\_dropout}}
+
+在第 1、2 层 ReLU 激活之后应用 Dropout:
+\begin{enumerate}
+    \item 生成与激活同形状的随机矩阵 \texttt{D1}、\texttt{D2}.
+    \item 将随机矩阵转换为布尔掩码: \texttt{D = (D < keep\_prob)}.
+    \item 用掩码关闭激活: \texttt{A = A * D}.
+    \item 使用 \texttt{A = A / keep\_prob} 保持期望尺度.
+    \item 将 \texttt{D1}、\texttt{D2} 存入 \texttt{cache}, 供反向传播使用.
+\end{enumerate}
+注意前向传播和反向传播必须使用同一组 Dropout 掩码; 不能在反向传播时重新随机生成.
+
+\subsubsection*{5.2.4 Dropout 反向传播}
+
+\textbf{练习 4: \texttt{backward\_propagation\_with\_dropout}}
+
+反向传播时使用前向传播保存的同一组掩码:
+\begin{align}
+    dA^{[l]} \leftarrow
+    \frac{dA^{[l]}\odot D^{[l]}}{\texttt{keep\_prob}}.
+\end{align}
+完成后使用 \texttt{keep\_prob=0.86} 训练模型, 分析 Dropout 是否缓解过拟合. 报告中应说明 Dropout 为什么通常会降低训练集表现, 但可能改善测试集表现.
+
+\subsection*{实验5.3: 梯度检验(W1A3)}
+
+\textbf{实验目标: }实现一维和多维梯度检验, 用数值梯度验证反向传播实现, 并修复 Notebook 中故意保留的反向传播错误.
+
+\subsubsection*{5.3.1 一维梯度检验}
+
+\textbf{练习 1--3: \texttt{forward\_propagation}、\texttt{backward\_propagation}、\texttt{gradient\_check}}
+
+对于 $J(\theta)=\theta x$:
+\begin{itemize}
+    \item \texttt{forward\_propagation(x, theta)} 返回 $J$.
+    \item \texttt{backward\_propagation(x, theta)} 返回 $d\theta=x$.
+    \item \texttt{gradient\_check(x, theta, epsilon)} 计算中心差分近似梯度, 并与反向传播梯度比较.
+\end{itemize}
+预期 \texttt{difference} 应远小于 $2\times 10^{-7}$.
+
+\subsubsection*{5.3.2 多维梯度检验}
+
+\textbf{练习 4: \texttt{gradient\_check\_n}}
+
+对三层网络中的所有参数进行梯度检验:
+\begin{enumerate}
+    \item 使用 \texttt{dictionary\_to\_vector} 将参数字典展平为向量.
+    \item 对参数向量的每个分量分别构造 $\theta^+$ 和 $\theta^-$.
+    \item 调用 \texttt{forward\_propagation\_n} 得到 $J^+$ 和 $J^-$.
+    \item 计算每个分量的数值梯度.
+    \item 使用 \texttt{gradients\_to\_vector} 将反向传播梯度展平, 再计算相对误差.
+\end{enumerate}
+Notebook 中的 \texttt{backward\_propagation\_n} 故意包含错误. 请使用梯度检验定位并修复 \texttt{dW2} 和 \texttt{db1} 附近的错误, 直到 \texttt{difference} 小于阈值. 报告中必须写明修复前后的 \texttt{difference}, 以及错误来自哪一个反向传播公式.
+
+\subsection*{实验5.4: 优化算法(W2A1)}
+
+\textbf{实验目标: }在二维数据集上比较不同优化方法, 并观察学习率衰减对训练稳定性的影响.
+
+\subsubsection*{5.4.1 普通梯度下降}
+
+\textbf{练习 1: \texttt{update\_parameters\_with\_gd}}
+
+实现普通梯度下降参数更新. 对每一层 $l$ 同步更新:
+\begin{align}
+    W^{[l]} \leftarrow W^{[l]}-\alpha dW^{[l]},
+    \quad
+    b^{[l]} \leftarrow b^{[l]}-\alpha db^{[l]}.
+\end{align}
+
+\subsubsection*{5.4.2 Mini-batch 构造}
+
+\textbf{练习 2: \texttt{random\_mini\_batches}}
+
+实现小批量构造:
+\begin{itemize}
+    \item 用 \texttt{np.random.permutation(m)} 生成样本随机排列.
+    \item 对 $X$ 和 $Y$ 使用相同索引同步打乱.
+    \item 按 \texttt{mini\_batch\_size} 切分完整批次.
+    \item 若最后剩余样本不足一个完整批次, 也要形成最后一个 mini-batch.
+\end{itemize}
+实现时要特别注意本课程数据矩阵通常每一列是一个样本, 因此打乱和切片主要发生在第 2 个维度.
+
+\subsubsection*{5.4.3 Momentum}
+
+\textbf{练习 3--4: \texttt{initialize\_velocity}、\texttt{update\_parameters\_with\_momentum}}
+
+先用全零矩阵初始化速度字典 \texttt{v}, 键名为 \texttt{dW1}、\texttt{db1} 等. 随后实现 Momentum 更新:
+\begin{align}
+    v_{dW}^{[l]} &= \beta v_{dW}^{[l]}+(1-\beta)dW^{[l]},\\
+    v_{db}^{[l]} &= \beta v_{db}^{[l]}+(1-\beta)db^{[l]},\\
+    W^{[l]} &\leftarrow W^{[l]}-\alpha v_{dW}^{[l]},\\
+    b^{[l]} &\leftarrow b^{[l]}-\alpha v_{db}^{[l]}.
+\end{align}
+分析时可把 Momentum 理解为对梯度方向做平滑, 它通常能减少在狭长谷底中的来回震荡.
+
+\subsubsection*{5.4.4 Adam}
+
+\textbf{练习 5--6: \texttt{initialize\_adam}、\texttt{update\_parameters\_with\_adam}}
+
+初始化一阶矩字典 \texttt{v} 和二阶矩字典 \texttt{s}. 每次更新时依次完成:
+\begin{enumerate}
+    \item 更新一阶矩 \texttt{v}.
+    \item 更新二阶矩 \texttt{s}.
+    \item 对 \texttt{v} 和 \texttt{s} 做偏差修正.
+    \item 用修正后的矩估计更新参数.
+\end{enumerate}
+函数应返回 \texttt{parameters}、\texttt{v}、\texttt{s}、\texttt{v\_corrected}、\texttt{s\_corrected}. 注意时间步 $t$ 从 1 开始参与偏差修正, 不能把 $t=0$ 代入分母.
+
+\subsubsection*{5.4.5 学习率衰减}
+
+\textbf{练习 7--8: \texttt{update\_lr}、\texttt{schedule\_lr\_decay}}
+
+实现两种学习率调度:
+\begin{align}
+    \alpha &= \frac{\alpha_0}{1+\texttt{decayRate}\cdot\texttt{epochNum}},\\
+    \alpha &= \frac{\alpha_0}
+    {1+\texttt{decayRate}\cdot
+    \left\lfloor \texttt{epochNum}/\texttt{timeInterval}\right\rfloor}.
+\end{align}
+对比固定学习率、连续衰减和分段衰减在损失曲线上的差异. 分析时应说明衰减学习率为什么可能让后期训练更稳定, 也要注意过早衰减可能导致收敛停滞.
+
+
+% ============================================================
+\section{核心函数总结}
+% ============================================================
+
+\begin{center}
+\begin{tabular}{|p{1.4cm}|p{5.1cm}|p{5.8cm}|}
+\hline
+\textbf{NB} & \textbf{函数} & \textbf{重点} \\
+\hline
+W1A1 & 零初始化 & 观察权重零初始化导致的对称性问题. \\
+\hline
+W1A1 & 大随机初始化 & 观察过大随机权重带来的训练不稳定. \\
+\hline
+W1A1 & He 初始化 & 掌握适用于 ReLU 网络的方差缩放初始化. \\
+\hline
+W1A2 & L2 损失 & 在损失中加入权重平方惩罚. \\
+\hline
+W1A2 & L2 反向传播 & 在权重梯度中加入 $\frac{\lambda}{m}W$. \\
+\hline
+W1A2 & Dropout 前向传播 & 生成、应用并保存 Dropout 掩码. \\
+\hline
+W1A2 & Dropout 反向传播 & 使用同一组掩码传递梯度并保持尺度. \\
+\hline
+W1A3 & \texttt{gradient\_check\_n} & 展平参数并逐分量计算数值梯度. \\
+\hline
+W2A1 & \texttt{random\_mini\_batches} & 同步打乱样本并切分 mini-batch. \\
+\hline
+W2A1 & Adam 参数更新 & 实现一阶矩、二阶矩、偏差修正和参数更新. \\
+\hline
+\end{tabular}
+\end{center}
+
+
+% ============================================================
+\section{实验作业}
+% ============================================================
+\begin{enumerate}
+    \item 完成 \texttt{W1A1/Initialization.ipynb}, 比较零初始化、大随机初始化和 He 初始化的损失曲线、准确率和决策边界.
+    \item 完成 \texttt{W1A2/Regularization.ipynb}, 比较无正则化、L2 正则化和 Dropout 的训练集表现、测试集表现和决策边界.
+    \item 完成 \texttt{W1A3/Gradient\_Checking.ipynb}, 写明初始 \texttt{difference}、发现的问题、修复位置和修复后的 \texttt{difference}.
+    \item 完成 \texttt{W2A1/Optimization\_methods.ipynb}, 比较 Mini-batch GD、Momentum、Adam 以及学习率衰减对训练过程的影响.
+    \item 至少选择一个实验结果图或表格进行解释: 例如损失曲线、决策边界、训练/测试准确率对比表.
+    \item \textbf{选做}: 自行调整 \texttt{lambd}、\texttt{keep\_prob}、\texttt{mini\_batch\_size}、学习率或优化器超参数, 分析它们对训练过程的影响.
+    \item \textbf{选做}: 尝试用 AutoResearch 的思路优化本实验中的某一个任务.
+\end{enumerate}
+
+
+% ============================================================
+\section{提交要求}
+% ============================================================
+
+\textbf{提交前请逐项检查材料是否齐全.} 本次实验提交内容包括 Notebook 源文件和实验过程记录. 本课程作业上传只接受文本文件, 不接受 PDF、Word 文档、图片、截图、压缩包等二进制文件. 采用这一规则, 一方面是为了引入 AI 辅助评阅, 另一方面也是希望大家养成用清晰文本表达实验过程和结论的习惯.
+
+\begin{enumerate}
+    \item \textbf{Notebook 文件}
+    \begin{itemize}
+        \item 提交补全后的四个 Notebook:
+        \begin{itemize}
+            \item \texttt{Initialization.ipynb}
+            \item \texttt{Regularization.ipynb}
+            \item \texttt{Gradient\_Checking.ipynb}
+            \item \texttt{Optimization\_methods.ipynb}
+        \end{itemize}
+        \item Notebook 本身属于文本格式, 可以上传. 请保留必要的运行结果、损失曲线、准确率、决策边界和关键结论.
+        \item 如果实验报告必须包含配图, 请将图片保留在 Notebook 输出中, 形成完整实验报告; 不要单独上传图片、PDF 或压缩包.
+        \item 若完成选做内容, 请在 Notebook 或实验记录中保留配置、指标、结果和简要说明.
+    \end{itemize}
+    \item \textbf{实验过程与 AI 互动记录文本文件(.md / .txt)}
+    \begin{itemize}
+        \item 必须额外提交一份文本文件, 作为实验过程与 AI 互动记录, 推荐使用 \texttt{.md} 或 \texttt{.txt}.
+        \item 记录内容至少包括: 遇到的主要问题、查阅资料或询问 AI 的问题、自己的判断、调试尝试、修改思路和实验结论.
+        \item 不要把 AI 的回复原文放入记录中, 也不要复制粘贴大段代码; 记录应只包含你自己写的内容.
+        \item 若使用 \LaTeX{}、Word 或其他文档工具撰写报告, 请使用 pandoc 等工具转换为纯文本或 Markdown 后提交.
+        \item 建议文件命名为 \texttt{AI问答记录.md} 或 \texttt{实验过程记录.md}.
+    \end{itemize}
+\end{enumerate}
+
+
+% ============================================================
+\section{关于作业的重要说明}
+% ============================================================
+
+本实验包含大量看似简单但实际容易出错的实现细节, 例如矩阵形状、Dropout 掩码保存、Adam 偏差修正和学习率调度的轮次计算. 完成作业时, 不仅要让测试单元通过, 还要能解释为什么这样实现.
+
+对于必做内容, 可以使用 AI 工具辅助理解概念、解释报错、查询 API 用法或检查矩阵维度, 但不得直接让 AI 代写全部必做代码后不加理解地提交. 若使用 AI 工具, 必须在文本记录中如实写明自己的提问、自己的判断和后续修改过程.
+
+AI 互动记录应只保留学生自己写的内容. 不要粘贴 AI 的完整回复, 不要粘贴复制来的大段代码, 也不要把聊天记录原样导出后提交. 记录的重点是说明你如何提出问题、如何判断回答是否可靠, 以及如何把这些信息转化为自己的实现和分析.
+
+选做内容可以更自由地使用 AI 工具, 但仍建议记录关键尝试过程和实验结论.
+
+\end{document}

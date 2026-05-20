@@ -9,9 +9,37 @@
 \date{第 3 讲  }
 \maketitle
 
+\section{导读}
 
-% ===================== 分类问题与线性模型 =====================
+除本导读外, 本讲共有 7 个主体节. 它们围绕分类模型展开: 先建立分类任务和线性判别的基本框架, 再用信息论解释分类损失, 最后依次讨论 Logistic 回归、Softmax 回归、感知器、支持向量机以及这些模型之间的差异.
+
+\begin{enumerate}
+    \item \textbf{分类问题与线性模型}: 说明分类任务的输出形式、线性分类器的判别方式以及常用评价指标.
+    \item \textbf{信息论与损失函数}: 说明极大似然、交叉熵、信息熵和 KL 散度如何为分类训练目标提供统一解释.
+    \item \textbf{Logistic 回归(二分类)}: 说明二分类中如何把线性得分转成概率, 并用交叉熵学习参数.
+    \item \textbf{Softmax 回归(多分类)}: 说明多分类中如何同时比较多个类别得分, 并得到类别概率分布.
+    \item \textbf{感知器(Perceptron)}: 说明错误驱动的线性分类学习规则, 以及线性可分条件下的基本性质.
+    \item \textbf{支持向量机(SVM)}: 说明最大间隔思想如何提升分类边界的稳定性, 以及核方法如何处理非线性分类.
+    \item \textbf{模型对比总结}: 对比 Logistic 回归、Softmax 回归、感知器和 SVM 在输出、损失、优化和适用场景上的差异.
+\end{enumerate}
+
+\textbf{如果细节都忘了}: 最应该记住的是, 分类模型通常先产生类别得分, 再通过不同规则把得分变成标签、概率或间隔约束. Logistic/Softmax 强调概率解释, 感知器强调错了就改, SVM 强调把分类边界推得更稳.
+
+\textbf{问题思考}:
+\begin{itemize}
+    \item 同样是线性分类器, 为什么 Logistic 回归、感知器和 SVM 会得到不同的训练目标?
+\end{itemize}
+
 \section{分类问题与线性模型}
+\textbf{本节导读}:
+\begin{itemize}
+    \item \textbf{本节目的}: 建立分类任务的基本语言, 说明线性模型如何通过得分函数和决策边界完成分类.
+    \item \textbf{为什么学}: 后续 Logistic 回归、Softmax、感知器和 SVM 都是在线性得分的基础上设计不同的输出解释和损失函数.
+    \item \textbf{核心内容}: 分类问题输出离散标签, 线性分类器用超平面划分特征空间, 评价指标则从不同角度衡量预测是否正确.
+    \item \textbf{最小例子}: 在二维平面上区分两类点时, 一条直线可以把平面分成两侧; 点落在哪一侧, 就对应模型预测的类别.
+    \item \textbf{最该记住}: 线性分类的核心不是“直线”本身, 而是用得分函数定义决策边界.
+\end{itemize}
+
 \begin{enumerate}
     \item \textbf{分类任务的基本特征}
     \begin{itemize}
@@ -119,8 +147,16 @@
     \item 感知器与 Logistic 回归的主要区别是什么?
 \end{itemize}
 
-% ===================== 信息论与损失函数 =====================
 \section{信息论与损失函数}
+\textbf{本节导读}:
+\begin{itemize}
+    \item \textbf{本节目的}: 解释分类模型为什么常用负对数似然和交叉熵作为训练目标.
+    \item \textbf{为什么学}: 分类准确率适合评价, 但不适合直接做梯度训练; 交叉熵提供了连续、可微且有概率解释的替代目标.
+    \item \textbf{核心内容}: 最大化真实标签的条件概率等价于最小化负对数似然, 对 one-hot 标签而言也就是最小化交叉熵.
+    \item \textbf{最小例子}: 若真实类别是猫, 模型给猫的概率为 $0.9$ 时损失 $-\log 0.9$ 很小; 若只给 $0.1$, 损失 $-\log 0.1$ 会明显变大.
+    \item \textbf{最该记住}: 交叉熵惩罚的是模型给真实类别的概率太低, 它把“分类正确”变成了可优化的概率目标.
+\end{itemize}
+
 \begin{enumerate}
     \item \textbf{从极大似然到交叉熵}
     \begin{itemize}
@@ -202,8 +238,16 @@
     \item KL 散度与交叉熵的关系是什么?
 \end{itemize}
 
-% ===================== Logistic回归(二分类) =====================
 \section{Logistic 回归(二分类)}
+\textbf{本节导读}:
+\begin{itemize}
+    \item \textbf{本节目的}: 说明二分类中如何把线性得分映射为正类概率, 并据此进行概率建模.
+    \item \textbf{为什么学}: Logistic 回归是从线性模型走向概率分类器的最小例子, 也是理解神经网络输出层和交叉熵的重要基础.
+    \item \textbf{核心内容}: 模型先计算 $\boldsymbol{w}^{\top}\boldsymbol{x}$, 再用 Sigmoid 得到 $P(y=1\mid\boldsymbol{x})$, 训练时最小化二分类交叉熵.
+    \item \textbf{最小例子}: 垃圾邮件分类中, 线性得分越大, Sigmoid 输出越接近 $1$, 表示模型越相信邮件是垃圾邮件; 阈值 $0.5$ 可用于给出最终标签.
+    \item \textbf{最该记住}: Logistic 回归不是普通线性回归换个名字, 它输出的是二分类概率.
+\end{itemize}
+
 \begin{enumerate}
     \item \textbf{模型形式与概率解释}
     \begin{itemize}
@@ -263,8 +307,16 @@
     \item 交叉熵损失如何影响模型训练?
 \end{itemize}
 
-% ===================== Softmax回归(多分类) =====================
 \section{Softmax 回归(多分类)}
+\textbf{本节导读}:
+\begin{itemize}
+    \item \textbf{本节目的}: 把二分类概率建模推广到多分类, 说明多个类别得分如何转成一个概率分布.
+    \item \textbf{为什么学}: 图像识别、文本分类等任务往往不止两个类别, 需要模型在所有类别之间进行相对比较.
+    \item \textbf{核心内容}: Softmax 对所有类别 logits 做指数归一化, 使概率非负且总和为 $1$, 再用多分类交叉熵学习参数.
+    \item \textbf{最小例子}: 对“猫、狗、车”三类, logits 为 $(3,1,0)$ 时, Softmax 会给猫最高概率; 若三个 logits 同时加上同一个常数, 类别概率不变.
+    \item \textbf{最该记住}: Softmax 概率只由类别得分的相对大小决定, 不是各类别彼此独立打分.
+\end{itemize}
+
 \begin{enumerate}
     \item \textbf{从二分类到多分类}
     \begin{itemize}
@@ -379,8 +431,16 @@
     \end{itemize}
 \end{enumerate}
 
-% ===================== 感知器(Perceptron) =====================
 \section{感知器(Perceptron)}
+\textbf{本节导读}:
+\begin{itemize}
+    \item \textbf{本节目的}: 介绍最早的线性分类学习算法之一, 说明如何根据分类错误直接修正参数.
+    \item \textbf{为什么学}: 感知器展示了“错误驱动更新”的基本思想, 也揭示了线性可分和非线性可分之间的关键差别.
+    \item \textbf{核心内容}: 对被分错的样本, 感知器按真实类别方向移动决策边界, 使该样本下一次更可能被分对.
+    \item \textbf{最小例子}: 若二分类标签取 $y\in\{-1,1\}$, 样本满足 $y\boldsymbol{w}^{\top}\boldsymbol{x}\le 0$ 时被分错, 可用 $\boldsymbol{w}\leftarrow\boldsymbol{w}+y\boldsymbol{x}$ 修正参数.
+    \item \textbf{最该记住}: 感知器只在犯错时更新, 但它不输出概率, 也不直接最大化分类间隔.
+\end{itemize}
+
 \begin{enumerate}
     \item \textbf{模型定义}
     \begin{itemize}
@@ -438,8 +498,16 @@
     \item 感知器收敛性的前提条件是什么?
 \end{itemize}
 
-% ===================== 支持向量机(SVM) =====================
 \section{支持向量机(SVM)}
+\textbf{本节导读}:
+\begin{itemize}
+    \item \textbf{本节目的}: 说明支持向量机如何通过最大化分类间隔得到更稳定的线性分类边界.
+    \item \textbf{为什么学}: 仅仅把训练样本分对并不唯一, 间隔思想提供了在多个可行分类边界中选择更稳健边界的原则.
+    \item \textbf{核心内容}: SVM 寻找能正确分类并尽可能远离最近训练样本的超平面, 核方法则把这个思想扩展到非线性特征空间.
+    \item \textbf{最小例子}: 两类点已经线性可分时, 可能有很多条直线能分开它们; SVM 会选择离两类最近点都尽量远的那条直线.
+    \item \textbf{最该记住}: SVM 的核心是最大间隔, 真正决定边界的是少数支持向量.
+\end{itemize}
+
 \begin{enumerate}
     \item \textbf{最大间隔思想}
     \begin{itemize}
@@ -506,8 +574,16 @@
     \item 软间隔 SVM 如何处理噪声数据?
 \end{itemize}
 
-% ===================== 模型对比总结 =====================
 \section{模型对比总结}
+\textbf{本节导读}:
+\begin{itemize}
+    \item \textbf{本节目的}: 把本讲几个线性分类模型放在一起比较, 理清它们在目标函数和输出解释上的差异.
+    \item \textbf{为什么学}: 多个模型形式相似, 但训练准则和适用场景不同; 对比能避免把它们只记成一组名字.
+    \item \textbf{核心内容}: Logistic/Softmax 侧重概率建模, 感知器侧重在线错误修正, SVM 侧重间隔最大化.
+    \item \textbf{最小例子}: 面对同一批线性可分数据, 感知器只要找到一条能分开的边界就可能停止, SVM 还会继续偏向间隔最大的边界, Logistic 回归则学习类别概率.
+    \item \textbf{最该记住}: 没有一个分类器在所有场景都最好, 选择模型要看是否需要概率、间隔、在线更新或非线性扩展.
+\end{itemize}
+
 \begin{enumerate}
     \item \textbf{模型选择的主要考虑}
     \begin{itemize}
