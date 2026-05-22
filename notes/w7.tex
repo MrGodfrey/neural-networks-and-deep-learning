@@ -230,26 +230,42 @@
   \item \textbf{batch size 与线性缩放规则}
     \begin{itemize}
       \item batch size 和学习率不能分开看. 当 batch size 变大时, 梯度估计的方差减小, 单步更新方向更稳定, 因而常可使用更大的学习率. 反过来, 若 batch 很小而学习率过大, 噪声和步长叠加后容易导致发散.
-      \item 线性缩放规则给出一个常用近似: 若 batch size 从 $B$ 增大到 $cB$, 学习率可从 $\eta$ 增大到 $c\eta$. 一个简单推导如下. 假设小 batch 连续做 $c$ 次更新, 且这 $c$ 次梯度近似相同, 则
+      \item 线性缩放规则给出一个常用近似: 若 batch size 从 $K$ 增大到 $cK$, 学习率可从 $\alpha$ 增大到 $c\alpha$. 下面用一个 epoch 内的参数位移说明这个规则. 设训练集共有 $N=MK$ 个样本, 并假设在这个很短的比较区间内, 每个样本给出的梯度都近似为同一个向量 $\boldsymbol{g}$. 当 batch size 为 $K$、学习率为 $\alpha$ 时, 一个 mini-batch 梯度为
       \[
-        \boldsymbol{\theta}_{t+c}
+        \frac{1}{K}\sum_{i=1}^{K}\boldsymbol{g}
         \approx
-        \boldsymbol{\theta}_t
-        -
-        \eta\sum_{j=1}^{c}\boldsymbol{g}_{t+j}
-        \approx
-        \boldsymbol{\theta}_t-c\eta\boldsymbol{g}.
+        \boldsymbol{g}.
       \]
-      若把这 $c$ 个小 batch 合成一个大 batch, 只做一次更新, 大 batch 梯度近似为同一个 $\boldsymbol{g}$, 为了得到相近位移, 需要
+      因为一个 epoch 要把 $MK$ 个样本大致用完, 所以需要 $M$ 次迭代. 若每一步的梯度平均值都近似为 $\boldsymbol{g}$, 一个 epoch 后的参数位移约为
       \[
-        \boldsymbol{\theta}_{t+1}
+        \Delta\boldsymbol{\theta}_{\mathrm{small}}
         \approx
-        \boldsymbol{\theta}_t-\eta'\boldsymbol{g}
-        \approx
-        \boldsymbol{\theta}_t-c\eta\boldsymbol{g},
+        -\alpha\sum_{j=1}^{M}\boldsymbol{g}
+        =
+        -M\alpha\boldsymbol{g}.
       \]
-      因此 $\eta'=c\eta$.
-      \item 这个推导依赖“短时间内梯度变化不大”的近似, 在训练初期或学习率很大时未必成立. 所以大 batch 训练常配合 learning rate warmup: 先用较小学习率启动, 再逐渐升到目标学习率, 以避免随机初始化阶段的大梯度和大学习率共同造成不稳定.
+      若把 batch size 直接增大到 $MK$, 一个 epoch 只需一次迭代. 此时全量 batch 的平均梯度为
+      \[
+        \frac{1}{MK}\sum_{i=1}^{MK}\boldsymbol{g}
+        \approx
+        \boldsymbol{g}.
+      \]
+      记对应学习率为 $\tilde{\alpha}$, 则一个 epoch 的参数位移约为
+      \[
+        \Delta\boldsymbol{\theta}_{\mathrm{large}}
+        \approx
+        -\tilde{\alpha}\boldsymbol{g}.
+      \]
+      如果希望两种 batch size 在使用同样多样本后产生相近的参数位移, 就令
+      \[
+        -\tilde{\alpha}\boldsymbol{g}
+        \approx
+        -M\alpha\boldsymbol{g},
+        \qquad
+        \tilde{\alpha}\approx M\alpha.
+      \]
+      这正是 batch size 扩大 $M$ 倍时学习率也扩大 $M$ 倍的线性缩放规则.
+      \item 需要注意, 上面的推导比较的是参数位移, 不是“梯度本身变大了 $M$ 倍”. 在常见实现中, batch 梯度是样本梯度的平均值, batch size 从 $K$ 变为 $MK$ 后, 平均梯度的尺度仍近似为 $\boldsymbol{g}$; 学习率变大的理由是小 batch 在同一个 epoch 内原本会走 $M$ 步, 大 batch 只走 $1$ 步. 这个推导还依赖“短时间内梯度变化不大”、优化器近似为普通 SGD、不同 batch 看到的方向相近等近似, 在训练初期或学习率很大时未必成立. 所以大 batch 训练常配合 learning rate warmup: 先用较小学习率启动, 再逐渐升到目标学习率, 以避免随机初始化阶段的大梯度和大学习率共同造成不稳定.
     \end{itemize}
   \item \textbf{学习率调度与 warmup}
     \begin{itemize}

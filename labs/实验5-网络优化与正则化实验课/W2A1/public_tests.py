@@ -447,3 +447,4 @@ def schedule_lr_decay_test(target):
     assert np.isclose(output_2, expected_output_2),f"output: {output_2} expected: {expected_output_2}"
 
     print("\033[92mAll tests passed")
+    
