@@ -103,6 +103,8 @@ dmypy.json
 *.joblib
 *.npy
 *.mat
+!labs/实验5-网络优化与正则化实验课/W1A2/datasets/data.mat
+!labs/实验5-网络优化与正则化实验课/W2A1/datasets/data.mat
 
 # Machine learning experiment artifacts
 logs/
