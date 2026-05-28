@@ -467,18 +467,79 @@
         \qquad
         W_{ij}\sim\operatorname{Unif}[-r,r].
       \]
-      真正关键的问题不是“高斯还是均匀”, 而是方差 $\sigma_w^2$ 或区间半径 $r$ 应该取多大.
-      \item 若权重尺度太小, 前向激活和反向梯度会逐层衰减; 若权重尺度太大, 激活值可能进入 Sigmoid 或 Tanh 的饱和区, 导致导数接近 $0$, 也可能使 ReLU 网络中的激活和梯度逐层放大. 初始化的基本目标就是让每一层的输出方差和梯度方差都保持在合理范围内.
-      \item 对于输入维度为 $n_{\mathrm{in}}$, 输出维度为 $n_{\mathrm{out}}$ 的线性层, Xavier 初始化常令
+      真正关键的问题不是“高斯还是均匀”, 而是方差 $\sigma_w^2$ 或区间半径 $r$ 应该取多大. 对称均匀分布的方差为
       \[
-        \operatorname{Var}(W_{ij}) \approx \frac{2}{n_{\mathrm{in}}+n_{\mathrm{out}}},
+        \operatorname{Var}\left(\operatorname{Unif}[-r,r]\right)
+        =
+        \frac{4r^2}{12}
+        =
+        \frac{r^2}{3},
       \]
-      适合 Tanh、Sigmoid 等近似对称的激活函数. 对应的均匀初始化可取
+      因而如果希望均匀初始化具有方差 $\sigma_w^2$, 就应取 $r=\sqrt{3}\sigma_w$.
+      \item 若权重尺度太小, 前向激活和反向梯度会逐层衰减; 若权重尺度太大, 激活值可能进入 Sigmoid 或 Tanh 的饱和区, 导致导数接近 $0$, 也可能使 ReLU 网络中的激活和梯度逐层放大. 初始化的基本目标就是让每一层的输出方差和梯度方差都保持在合理范围内.
+      \item Xavier 初始化的目的就是根据神经元的输入个数和输出个数来调节参数方差. 先从正向传播看. 对于输入维度为 $n_{\mathrm{in}}$, 输出维度为 $n_{\mathrm{out}}$ 的线性层, 若激活函数先近似看成恒等映射 $f(z)=z$, 一个输出神经元可写为
+      \[
+        a_j^{\mathrm{out}}
+        =
+        f\left(\sum_{i=1}^{n_{\mathrm{in}}} w_{ji}a_i^{\mathrm{in}}\right)
+        =
+        \sum_{i=1}^{n_{\mathrm{in}}} w_{ji}a_i^{\mathrm{in}}.
+      \]
+      假设 $w_{ji}$ 与 $a_i^{\mathrm{in}}$ 相互独立, 各自同分布, 且期望都为 $0$, 则
+      \[
+        \operatorname{Var}(a_j^{\mathrm{out}})
+        =
+        \sum_{i=1}^{n_{\mathrm{in}}}
+        \operatorname{Var}(w_{ji}a_i^{\mathrm{in}})
+        =
+        n_{\mathrm{in}}\operatorname{Var}(W)\operatorname{Var}(a^{\mathrm{in}}).
+      \]
+      因此若希望正向传播中 $\operatorname{Var}(a^{\mathrm{out}})\approx\operatorname{Var}(a^{\mathrm{in}})$, 就需要
+      \[
+        \operatorname{Var}(W)\approx\frac{1}{n_{\mathrm{in}}}.
+      \]
+      从反向传播看, 线性层中某个输入方向的梯度近似为
+      \[
+        \delta_i^{\mathrm{in}}
+        =
+        \frac{\partial\mathcal{L}}{\partial a_i^{\mathrm{in}}}
+        =
+        \sum_{j=1}^{n_{\mathrm{out}}} w_{ji}\delta_j^{\mathrm{out}},
+      \]
+      在同样的独立、零均值近似下,
+      \[
+        \operatorname{Var}(\delta_i^{\mathrm{in}})
+        =
+        n_{\mathrm{out}}\operatorname{Var}(W)\operatorname{Var}(\delta^{\mathrm{out}}).
+      \]
+      因此若希望反向梯度方差也大致保持不变, 则需要
+      \[
+        \operatorname{Var}(W)\approx\frac{1}{n_{\mathrm{out}}}.
+      \]
+      当前向约束和反向约束不能同时精确满足时, Xavier 初始化用 $n_{\mathrm{in}}$ 与 $n_{\mathrm{out}}$ 的平均规模作折中, 即令
+      \[
+        \frac{n_{\mathrm{in}}+n_{\mathrm{out}}}{2}\operatorname{Var}(W)\approx 1,
+        \qquad
+        \operatorname{Var}(W) \approx \frac{2}{n_{\mathrm{in}}+n_{\mathrm{out}}}.
+      \]
+      这样做并不是说某一侧完全正确, 而是在正向激活不爆炸、不消失和反向梯度不爆炸、不消失之间作对称折中, 避免只照顾输入端或只照顾输出端.
+      \item 对应的均匀初始化可取
       \[
         W_{ij}\sim\operatorname{Unif}
         \left[-\sqrt{\frac{6}{n_{\mathrm{in}}+n_{\mathrm{out}}}},
         \sqrt{\frac{6}{n_{\mathrm{in}}+n_{\mathrm{out}}}}\right].
       \]
+      其中根号下的 $6$ 来自两部分: 均匀分布有 $\operatorname{Var}(\operatorname{Unif}[-r,r])=r^2/3$, Xavier 方差为 $2/(n_{\mathrm{in}}+n_{\mathrm{out}})$, 合起来就是
+      \[
+        \frac{r^2}{3}
+        =
+        \frac{2}{n_{\mathrm{in}}+n_{\mathrm{out}}},
+        \qquad
+        r
+        =
+        \sqrt{\frac{6}{n_{\mathrm{in}}+n_{\mathrm{out}}}}.
+      \]
+      Xavier 初始化主要适合 Tanh 等在零附近近似线性的平滑激活函数. 更一般地, 若非线性在初始化附近可近似为 $f(z)\approx c z$, 则前面的方差推导只会多出一个常数因子 $c^2$, 可以通过额外的增益系数进行修正. Sigmoid 本身不是零中心函数, 但在零附近有 $\sigma(z)-1/2\approx z/4$, 因而也可以用类似的局部线性近似来理解; 只是它的非零均值和饱和区会使深层网络训练更容易出现偏移和梯度变小的问题.
       \item 对于 ReLU 及其变体, 由于大约一半负半轴输出被置零, He 初始化常令
       \[
         \operatorname{Var}(W_{ij}) \approx \frac{2}{n_{\mathrm{in}}}.
@@ -650,7 +711,7 @@
         \frac{x_j^{(n)}-\mu_j}{\sqrt{\sigma_j^2+\epsilon}}.
       \]
       标准化后的特征均值约为 $0$, 方差约为 $1$, 但这并不意味着任意分布都会变成正态分布. 它只改变一阶和二阶尺度, 不会自动消除特征之间的相关性.
-      \item 白化 (Whitening) 进一步降低特征之间的相关性. 若中心化后的协方差矩阵分解为 $\boldsymbol{\Sigma}=\boldsymbol{U}\boldsymbol{\Lambda}\boldsymbol{U}^{\top}$, PCA 白化可粗略写为
+      \item 白化 (Whitening) 进一步降低特征之间的相关性. PCA 是 Principal Component Analysis, 即主成分分析. 若中心化后的协方差矩阵分解为 $\boldsymbol{\Sigma}=\boldsymbol{U}\boldsymbol{\Lambda}\boldsymbol{U}^{\top}$, 其中 $\boldsymbol{U}$ 的列向量是协方差矩阵的特征向量, $\boldsymbol{\Lambda}$ 的对角元是对应特征值, PCA 白化可粗略写为
       \[
         \tilde{\boldsymbol{x}}
         =
@@ -658,7 +719,32 @@
         \boldsymbol{U}^{\top}
         (\boldsymbol{x}-\boldsymbol{\mu}).
       \]
-      白化后各方向方差更接近, 且相关性降低; 但它需要估计和分解协方差矩阵, 计算和数值代价都高. 在很多深度学习任务中, 对输入做标准化已经足够.
+      这里可以把两步分开理解. 先令
+      \[
+        \boldsymbol{z}
+        =
+        \boldsymbol{U}^{\top}
+        (\boldsymbol{x}-\boldsymbol{\mu}),
+      \]
+      相当于把坐标轴旋转到数据方差最大的主方向上. 由于
+      \[
+        \operatorname{Cov}(\boldsymbol{z})
+        =
+        \boldsymbol{U}^{\top}\boldsymbol{\Sigma}\boldsymbol{U}
+        =
+        \boldsymbol{\Lambda},
+      \]
+      新坐标下的协方差矩阵是对角矩阵, 不同主方向之间的二阶相关性就被消掉了; 第 $i$ 个方向的方差为 $\lambda_i$. 再乘以 $\boldsymbol{\Lambda}^{-1/2}$, 就是在第 $i$ 个主方向上除以标准差 $\sqrt{\lambda_i}$, 因而
+      \[
+        \operatorname{Cov}(\tilde{\boldsymbol{x}})
+        =
+        \boldsymbol{\Lambda}^{-\frac{1}{2}}
+        \boldsymbol{\Lambda}
+        \boldsymbol{\Lambda}^{-\frac{1}{2}}
+        =
+        \boldsymbol{I}.
+      \]
+      这说明在理想估计下, 白化后的各主方向方差都变为 $1$, 方向之间的协方差变为 $0$. 这里说“更接近”和“降低”, 是因为实际数据有限、协方差估计有误差, 实现中还常把 $\boldsymbol{\Lambda}^{-1/2}$ 写成 ${\left(\boldsymbol{\Lambda}+\epsilon\boldsymbol{I}\right)}^{-\frac{1}{2}}$ 来避免小特征值导致数值不稳定. 需要注意, 白化只消除了二阶相关性, 并不保证非高斯特征之间完全独立; 而且它需要估计和分解协方差矩阵, 计算和数值代价都高. 在很多深度学习任务中, 对输入做标准化已经足够.
       \item 验证集和测试集必须使用训练集上的 $\mu_j,\sigma_j$ 或最大最小值. 若重新使用验证集或测试集自身统计量, 就把评估数据的信息泄漏进了预处理过程.
     \end{itemize}
   \item \textbf{从输入归一化到中间层归一化}
@@ -793,7 +879,16 @@
         +
         \lambda\ell_p(\boldsymbol{\theta}),
       \]
-      其中 $p$ 常取 $1$ 或 $2$, $\lambda$ 为正则化系数.
+      其中 $p$ 常取 $1$ 或 $2$, $\lambda$ 为正则化系数. 若参数向量为 $\boldsymbol{\theta}=(\theta_1,\ldots,\theta_d)$, 则
+      \[
+        \|\boldsymbol{\theta}\|_1
+        =
+        \sum_{i=1}^{d}|\theta_i|,
+        \qquad
+        \|\boldsymbol{\theta}\|_2
+        =
+        \sqrt{\sum_{i=1}^{d}\theta_i^2}.
+      \]
       \item $\ell_1$ 正则化取 $\Omega(\boldsymbol{\theta})=\|\boldsymbol{\theta}\|_1$, 倾向于产生稀疏参数. 从几何直觉看, $\ell_1$ 约束区域在坐标轴方向有尖角, 最优点更容易落在某些坐标为 $0$ 的位置, 因而常用于特征选择或希望模型更稀疏的场景.
       \item $\ell_2$ 正则化取 $\Omega(\boldsymbol{\theta})=\frac{1}{2}\|\boldsymbol{\theta}\|_2^2$, 倾向于抑制参数过大. 它通常不会把参数精确压到 $0$, 而是让许多参数同时变小, 从而提高模型对扰动的稳定性.
       \item 若普通梯度为 $\boldsymbol{g}_t=\nabla\hat{\mathcal{R}}(\boldsymbol{\theta}_t)$, 则带 $\ell_2$ 正则化的 SGD 更新为
@@ -841,7 +936,23 @@
         \qquad
         m_i \sim \operatorname{Bernoulli}(q).
       \]
-      这里除以 $q$ 是 inverted dropout 的常见实现, 使 $\mathbb{E}[\tilde{\boldsymbol{h}}]=\boldsymbol{h}$, 推理阶段无需额外缩放.
+      这里除以 $q$ 是 inverted dropout 的常见实现. 期望是对随机掩码 $\boldsymbol{m}$ 取的; 在计算这一期望时, 通常把当前样本已经得到的激活 $\boldsymbol{h}$ 看成给定值, 并假设掩码 $m_i$ 与 $h_i$ 独立, 且
+      \[
+        \mathbb{P}(m_i=1)=q,
+        \qquad
+        \mathbb{P}(m_i=0)=1-q.
+      \]
+      因此 $\mathbb{E}[m_i]=q$, 逐坐标有
+      \[
+        \mathbb{E}[\tilde{h}_i\mid h_i]
+        =
+        \mathbb{E}\left[\frac{m_i h_i}{q}\mid h_i\right]
+        =
+        \frac{h_i}{q}\mathbb{E}[m_i]
+        =
+        h_i.
+      \]
+      合在一起就是 $\mathbb{E}[\tilde{\boldsymbol{h}}\mid\boldsymbol{h}]=\boldsymbol{h}$. 如果训练时不除以 $q$, 则期望会变成 $q\boldsymbol{h}$, 推理阶段就需要再乘以 $q$ 或做相应尺度修正. Inverted dropout 把这个尺度修正放在训练阶段完成, 因而推理阶段关闭 Dropout 后可以直接使用完整激活. 需要注意, 这个结论只保证当前层被丢弃后激活的逐坐标期望不变; 经过后续非线性层后, 整个网络输出的期望不一定严格等于无 Dropout 网络的输出.
       \item Dropout 的直观作用是让网络不能过度依赖某些局部神经元组合, 从而降低共适应 (co-adaptation). 如果某个神经元承载了过多信息, 随机丢弃会迫使其他路径也学习可用表示, 使模型对局部扰动更稳定.
       \item 从集成学习角度看, 每次丢弃都相当于从原网络中采样一个子网络. 若有 $d$ 个可丢弃单元, 理论上存在多达 $2^d$ 个掩码模式. 推理阶段使用完整网络和尺度校正, 可看作对这些子网络预测的一种廉价近似.
       \item 从贝叶斯近似角度看, Dropout 也可理解为对参数或子网络掩码的随机采样. 若显式做 Monte Carlo Dropout, 可用多次采样近似
@@ -852,7 +963,7 @@
         \frac{1}{M}\sum_{m=1}^{M}
         f(\boldsymbol{x};\boldsymbol{\theta}_m).
       \]
-      课堂中更重要的是把它理解为训练阶段的随机正则化, 不必把每次普通推理都解释成真实的贝叶斯积分.
+      更重要的是把它理解为训练阶段的随机正则化, 不必把每次普通推理都解释成真实的贝叶斯积分.
       \item 在循环神经网络中, 若每个时间步都重新采样不同的丢弃掩码, 可能破坏时间维度上的记忆. 因此常使用 locked dropout 或 variational dropout: 对同一序列在所有时间步复用同一个掩码, 使采样到的子网络在时间展开中保持一致.
       \item 推理阶段通常关闭 Dropout, 使用完整网络. 这体现了训练和推理行为的差异, 与 Batch Normalization 类似都需要在实现中明确区分模式.
     \end{itemize}
