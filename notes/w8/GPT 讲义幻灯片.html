@@ -507,14 +507,39 @@
     .answer-card {
       color: var(--orange);
       border-color: rgba(238, 107, 34, .55);
-      background: linear-gradient(180deg, #fff, var(--orange-soft));
+      background:
+        linear-gradient(135deg, rgba(238, 107, 34, .18), transparent 34%),
+        linear-gradient(180deg, #fff, var(--orange-soft));
+    }
+
+    .answer-kicker {
+      display: inline-flex;
+      min-height: 28px;
+      align-items: center;
+      padding: 0 10px;
+      margin-bottom: 12px;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid rgba(238, 107, 34, .26);
+      color: #9e3f10;
+      font-size: 13px;
+      font-weight: 820;
     }
 
     .answer-card p {
       margin: 0;
-      font-size: 21px;
-      line-height: 1.45;
+      font-size: 18px;
+      line-height: 1.38;
       font-weight: 780;
+    }
+
+    .answer-card strong {
+      display: block;
+      margin-bottom: 8px;
+      color: #c84f13;
+      font-size: 31px;
+      line-height: 1.05;
+      font-weight: 920;
     }
 
     .big-map {
@@ -927,6 +952,7 @@
       border: 1px solid var(--rule);
       box-shadow: 0 18px 46px rgba(16,24,39,.07);
       position: relative;
+      isolation: isolate;
       overflow: hidden;
     }
 
@@ -939,6 +965,12 @@
       height: 150px;
       border-radius: 50%;
       background: var(--accent-soft);
+      z-index: 0;
+    }
+
+    .compare-card > * {
+      position: relative;
+      z-index: 1;
     }
 
     .compare-card h3 {
@@ -1151,46 +1183,192 @@
       box-shadow: 0 14px 34px rgba(16,24,39,.06);
     }
 
-    .path-cloud {
-      height: 172px;
-      border-radius: 26px;
-      border: 1px solid var(--rule);
-      background: #fff;
+    .reason-board {
       display: grid;
-      grid-template-columns: 160px 1fr 190px;
-      align-items: center;
-      gap: 20px;
-      padding: 24px;
-      box-shadow: 0 18px 46px rgba(16,24,39,.07);
-      overflow: hidden;
+      grid-template-columns: minmax(280px, .86fr) minmax(460px, 1.14fr);
+      grid-template-rows: minmax(0, 1fr);
+      gap: 12px;
+      align-items: stretch;
+      height: 100%;
+      min-height: 0;
     }
 
-    .paths {
-      position: relative;
-      height: 124px;
+    .reason-problem {
+      border-radius: 24px;
+      border: 1px solid rgba(36, 107, 254, .24);
       background:
-        linear-gradient(90deg, transparent 0 22%, rgba(207,215,223,.8) 22% 22.5%, transparent 22.5% 48%, rgba(207,215,223,.8) 48% 48.5%, transparent 48.5% 74%, rgba(207,215,223,.8) 74% 74.5%, transparent 74.5%);
+        linear-gradient(180deg, rgba(255,255,255,.96), rgba(234,242,255,.78));
+      padding: 18px;
+      box-shadow: 0 18px 46px rgba(16,24,39,.07);
+      display: grid;
+      align-content: space-between;
+      gap: 12px;
+      min-height: 0;
     }
 
-    .paths .path {
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: var(--y);
-      height: 2px;
-      background: color-mix(in srgb, var(--accent) 56%, #cfd7df);
-      transform: rotate(var(--r));
-      transform-origin: left center;
+    .problem-label, .step-label {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1;
+      font-weight: 850;
+      letter-spacing: .06em;
+      text-transform: uppercase;
     }
 
-    .paths .dot {
-      position: absolute;
-      right: 0;
-      top: calc(var(--y) - 5px);
-      width: 11px;
-      height: 11px;
-      border-radius: 99px;
-      background: var(--accent);
+    .reason-problem p {
+      margin: 0;
+      color: #182233;
+      font-size: 23px;
+      line-height: 1.34;
+      font-weight: 780;
+    }
+
+    .reason-problem strong {
+      color: var(--blue);
+      font-weight: 900;
+    }
+
+    .bad-answer {
+      border-radius: 18px;
+      border: 1px solid rgba(216,60,60,.28);
+      background: rgba(255,240,240,.9);
+      color: var(--red);
+      padding: 13px;
+      font-size: 16px;
+      line-height: 1.35;
+      font-weight: 820;
+    }
+
+    .bad-answer small {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      font-weight: 620;
+    }
+
+    .reason-lines {
+      display: grid;
+      grid-template-rows: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      min-height: 0;
+    }
+
+    .reason-line {
+      min-height: 0;
+      border-radius: 17px;
+      border: 1px solid color-mix(in srgb, var(--accent) 46%, #dfe5ec);
+      background: #fff;
+      padding: 0 16px;
+      box-shadow: 0 14px 34px rgba(16,24,39,.055);
+      display: grid;
+      grid-template-columns: 82px minmax(170px, .9fr) 1fr;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .reason-line .step-label {
+      color: var(--accent);
+    }
+
+    .reason-line b {
+      color: var(--accent);
+      font-size: 26px;
+      line-height: 1;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .reason-line small {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.25;
+      font-weight: 650;
+    }
+
+    .rl-practice {
+      display: grid;
+      gap: 14px;
+      height: 100%;
+      min-height: 0;
+    }
+
+    .rl-flow {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .rl-step-card {
+      height: 168px;
+      min-height: 0;
+      border-radius: 20px;
+      border: 1px solid color-mix(in srgb, var(--accent) 44%, #dfe5ec);
+      background: #fff;
+      padding: 12px 13px;
+      box-shadow: 0 14px 34px rgba(16,24,39,.06);
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      gap: 6px;
+    }
+
+    .rl-step-card .step-label {
+      color: var(--accent);
+    }
+
+    .rl-step-card b {
+      color: var(--accent);
+      font-size: 21px;
+      line-height: 1.12;
+      font-weight: 900;
+    }
+
+    .rl-step-card small {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.32;
+      font-weight: 620;
+    }
+
+    .sample-list {
+      display: grid;
+      gap: 4px;
+      align-self: end;
+    }
+
+    .sample-list span {
+      min-height: 20px;
+      border-radius: 8px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid color-mix(in srgb, var(--accent) 26%, #fff);
+      display: flex;
+      align-items: center;
+      padding: 0 7px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .rl-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .rl-summary .callout {
+      min-height: 72px;
+      padding: 18px 22px;
+      font-size: 25px;
+      display: grid;
+      align-content: center;
+    }
+
+    .rl-summary .callout small {
+      font-size: 16px;
+      margin-top: 10px;
+      line-height: 1.35;
     }
 
     .final-grid {
@@ -1365,20 +1543,41 @@
         position: sticky;
         top: 0;
         padding: 14px 16px;
+        min-width: 0;
       }
-      .brand h1 { font-size: 16px; }
-      .layout { grid-template-columns: 1fr; }
+      .brand {
+        flex: 1 1 0;
+        min-width: 0;
+      }
+      .brand h1 {
+        min-width: 0;
+        font-size: 16px;
+      }
+      .top-actions {
+        flex: 0 0 auto;
+      }
+      #fullscreenButton { display: none; }
+      .layout {
+        grid-template-columns: 1fr;
+        min-width: 0;
+      }
       .rail { display: none; }
       .stage-shell {
         padding: 14px;
         min-height: 68vh;
+        min-width: 0;
+        overflow: hidden;
       }
       .stage {
         width: 100%;
+        max-width: 100%;
         min-height: 560px;
+        min-width: 0;
         aspect-ratio: auto;
       }
       .slide {
+        width: 100%;
+        min-width: 0;
         padding: 32px 24px 28px;
         border-radius: 18px;
         overflow: auto;
@@ -1386,12 +1585,21 @@
       .slide-inner {
         height: auto;
         min-height: 100%;
+        min-width: 0;
       }
+      .slide-body, .reason-board { min-width: 0; }
       .slide-title { font-size: 30px; }
       .flow, .hero-flow, .big-map, .pipeline, .split, .objective, .architecture,
       .loop, .compute, .compare, .protocol, .hallucination, .known-map,
-      .tools, .identity-row, .reason-row, .rl-row, .final-grid {
+      .tools, .identity-row, .reason-row, .reason-board, .reason-lines,
+      .rl-row, .final-grid {
         grid-template-columns: 1fr;
+      }
+      .reason-problem { grid-row: auto; }
+      .reason-line {
+        grid-template-columns: 1fr;
+        gap: 5px;
+        padding: 14px;
       }
       .node::after, .pipe-step::after, .arch-block::after { display: none; }
       .bottom {
@@ -1399,10 +1607,16 @@
         bottom: 0;
         grid-template-columns: 1fr;
         gap: 12px;
+        min-width: 0;
+        padding: 12px 14px;
       }
       .bottom-left, .bottom-right {
         justify-content: center;
         flex-wrap: wrap;
+      }
+      .progress {
+        min-width: 0;
+        grid-template-columns: 44px minmax(0, 1fr) 44px;
       }
       .hint { display: none; }
       .overview { padding: 24px; }
@@ -1464,7 +1678,10 @@
                     <span class="token">文本</span><span class="token">→</span><span class="token">token</span><span class="token">→</span><span class="token">ID</span><span class="token">...</span>
                   </div>
                   <div class="network"><span>NN</span></div>
-                  <div class="answer-card"><p>预测、采样、追加，直到生成完整回答。</p></div>
+                  <div class="answer-card">
+                    <span class="answer-kicker">核心直觉</span>
+                    <p><strong>文字接龙</strong>ChatGPT 其实只是在反复预测下一个 token，接上，再继续。</p>
+                  </div>
                 </div>
               </div>
               <footer class="slide-foot"><span>Section 1</span><span>01 / 17</span></footer>
@@ -1521,7 +1738,7 @@
                     <div class="pipe-step green"><b>URL 过滤</b><span>去掉垃圾站、恶意站、成人内容等来源。</span></div>
                     <div class="pipe-step orange"><b>正文抽取</b><span>HTML 里只保留正文，剔除菜单、脚本和页脚。</span></div>
                     <div class="pipe-step violet"><b>语言 / 质量</b><span>用分类器和质量规则控制训练分布。</span></div>
-                    <div class="pipe-step red"><b>去重 + PII</b><span>减少重复样本，移除敏感个人信息。</span></div>
+                    <div class="pipe-step red"><b>去重 + 去个人信息</b><span>减少重复样本，移除敏感个人信息。</span></div>
                   </div>
                   <div class="metric-row">
                     <div class="metric blue"><b>44TB</b><span>FineWeb 量级</span></div>
@@ -1539,7 +1756,7 @@
               <header class="slide-head">
                 <div class="eyebrow">Tokenization</div>
                 <h2 class="slide-title">模型看到的是 token，不是字符</h2>
-                <p class="slide-subtitle">BPE 用更大的词表换更短的序列，也制造了很多直觉错位。</p>
+                <p class="slide-subtitle"> 字节对编码 (BPE) 用更大的词表换更短的序列，也制造了很多直觉错位。</p>
               </header>
               <div class="slide-body">
                 <div class="split">
@@ -1555,7 +1772,7 @@
                   </div>
                   <div class="callout orange">
                     strawberry 里有几个 r？
-                    <small>人眼看到字符；模型要从 token 表示里间接推断，计数和拼写会变脆。</small>
+                    <small>人眼看到字符；模型要从 token 表示里间接推断，计数和拼写能力不行。</small>
                   </div>
                 </div>
               </div>
@@ -1793,22 +2010,42 @@
             <div class="slide-inner">
               <header class="slide-head">
                 <div class="eyebrow">Reasoning</div>
-                <h2 class="slide-title">模型需要 token 来思考，也会在小事上翻车</h2>
-                <p class="slide-subtitle">一步一步不是装样子，中间结果会进入上下文帮助后续预测。</p>
+                <h2 class="slide-title">思维链的作用：把隐式计算变成工作记忆</h2>
+                <p class="slide-subtitle">中间步骤不是给人看的仪式；它们写入上下文后，会被后续 attention 读取、检查和继续使用。</p>
               </header>
               <div class="slide-body">
-                <div class="reason-map">
-                  <div class="reason-row" style="--cols:4">
-                    <div class="mini-node red">直接答：3</div>
-                    <div class="mini-node blue">橙子 $4</div>
-                    <div class="mini-node green">苹果 $9</div>
-                    <div class="mini-node orange">每个 $3</div>
-                  </div>
-                  <div class="reason-row" style="--cols:4">
-                    <div class="callout blue">计数<small>点号、字母数容易错。</small></div>
-                    <div class="callout green">拼写<small>token 不等于字符。</small></div>
-                    <div class="callout orange">小数比较<small>语境模式可能干扰。</small></div>
-                    <div class="callout violet">用代码<small>精确操作交给工具。</small></div>
+                <div class="reason-board">
+                  <section class="reason-problem">
+                    <div>
+                      <div class="problem-label">例子：先让题目可见</div>
+                      <p>Emily 买了 <strong>3 个苹果</strong>和 <strong>2 个橙子</strong>；每个橙子 <strong>$2</strong>，总价 <strong>$13</strong>。问：每个苹果多少钱？</p>
+                    </div>
+                    <div class="bad-answer">
+                      只答“$3”看不到思维链
+                      <small>$4、$9、最后的 $3 分别是橙子总价、苹果总价、苹果单价；写出来才会成为后续 token 可读取的工作记忆。</small>
+                    </div>
+                  </section>
+                  <div class="reason-lines">
+                    <div class="reason-line blue">
+                      <span class="step-label">1</span>
+                      <b>降低预测负担</b>
+                      <small>把大跳跃拆成多个小预测。</small>
+                    </div>
+                    <div class="reason-line orange">
+                      <span class="step-label">2</span>
+                      <b>形成工作记忆</b>
+                      <small>$4、$9 写入上下文，后续 token 可读取。</small>
+                    </div>
+                    <div class="reason-line green">
+                      <span class="step-label">3</span>
+                      <b>支持检查回溯</b>
+                      <small>步骤可检查，错了能定位。</small>
+                    </div>
+                    <div class="reason-line violet">
+                      <span class="step-label">4</span>
+                      <b>连接外部工具</b>
+                      <small>精确计算、计数、字符串处理可转交代码。</small>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1824,21 +2061,50 @@
                 <p class="slide-subtitle">成功路径来自模型采样，不只是人类专家解法的模仿。</p>
               </header>
               <div class="slide-body">
-                <div class="rl-map">
-                  <div class="path-cloud">
-                    <div class="mini-node blue">Prompt</div>
-                    <div class="paths">
-                      <i class="path" style="--y:28px;--r:-7deg;--accent:var(--red)"></i><i class="dot" style="--y:28px;--accent:var(--red)"></i>
-                      <i class="path" style="--y:62px;--r:4deg;--accent:var(--green)"></i><i class="dot" style="--y:62px;--accent:var(--green)"></i>
-                      <i class="path" style="--y:96px;--r:0deg;--accent:var(--green)"></i><i class="dot" style="--y:96px;--accent:var(--green)"></i>
-                      <i class="path" style="--y:132px;--r:-4deg;--accent:var(--red)"></i><i class="dot" style="--y:132px;--accent:var(--red)"></i>
+                <div class="rl-practice">
+                  <div class="rl-flow">
+                    <div class="rl-step-card blue">
+                      <span class="step-label">1 · 出题</span>
+                      <b>同一个 Prompt</b>
+                      <small>题目可验证，但不提供标准解题过程。</small>
+                      <div class="sample-list">
+                        <span>数学答案</span>
+                        <span>代码测试</span>
+                      </div>
                     </div>
-                    <div class="mini-node green">正确路径<br>被强化</div>
+                    <div class="rl-step-card orange">
+                      <span class="step-label">2 · 自己尝试</span>
+                      <b>采样多条路径</b>
+                      <small>同一题生成多条 token 序列，成功失败都有。</small>
+                      <div class="sample-list">
+                        <span>A：错</span>
+                        <span>B：对</span>
+                        <span>C：对</span>
+                      </div>
+                    </div>
+                    <div class="rl-step-card green">
+                      <span class="step-label">3 · 奖励筛选</span>
+                      <b>给路径打分</b>
+                      <small>用答案、单元测试、胜负结果判断哪条路径有效。</small>
+                      <div class="sample-list">
+                        <span>正确 +1</span>
+                        <span>错误 0</span>
+                      </div>
+                    </div>
+                    <div class="rl-step-card violet">
+                      <span class="step-label">4 · 更新模型</span>
+                      <b>强化高分路径</b>
+                      <small>下次相似题，更容易生成检查、回溯、换角度。</small>
+                      <div class="sample-list">
+                        <span>不是照抄人类</span>
+                        <span>是优化自身策略</span>
+                      </div>
+                    </div>
                   </div>
-                  <div class="rl-row rl-cases" style="--cols:3">
-                    <div class="callout blue">DeepSeek R1<small>检查、回溯、换角度。</small></div>
-                    <div class="callout orange">AlphaGo 第 37 手<small>离开人类分布。</small></div>
-                    <div class="callout green">可验证练习<small>数学、代码、棋局。</small></div>
+                  <div class="rl-summary">
+                    <div class="callout blue">DeepSeek R1<small>RL 推出检查、回溯、换角度等策略。</small></div>
+                    <div class="callout orange">AlphaGo 第 37 手<small>RL 可以离开人类示范分布。</small></div>
+                    <div class="callout green">前提：奖励可靠<small>数学、代码、棋局比开放偏好更适合长时间 RL。</small></div>
                   </div>
                 </div>
               </div>
