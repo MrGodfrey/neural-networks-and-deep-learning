@@ -1,0 +1,1913 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GPT 用法：把 LLM 当作工具箱</title>
+  <style>
+    :root {
+      --bg: #edf2f7;
+      --paper: #fbfaf6;
+      --paper-2: #f7f9fc;
+      --ink: #111827;
+      --muted: #5c6676;
+      --line: #d1dae4;
+      --blue: #246bfe;
+      --blue-soft: #e8f1ff;
+      --green: #0f9f6e;
+      --green-soft: #e8f8ef;
+      --orange: #ed6b22;
+      --orange-soft: #fff0e4;
+      --violet: #754cff;
+      --violet-soft: #f0ecff;
+      --red: #d83b3b;
+      --red-soft: #fff0f0;
+      --yellow: #f6c34a;
+      --shadow: 0 24px 70px rgba(17, 24, 39, .16);
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font);
+      background:
+        radial-gradient(circle at 88% 12%, rgba(36, 107, 254, .10), transparent 30%),
+        radial-gradient(circle at 12% 88%, rgba(15, 159, 110, .09), transparent 28%),
+        linear-gradient(180deg, #f8fafc 0%, var(--bg) 100%);
+      overflow: hidden;
+    }
+
+    button {
+      font: inherit;
+      color: inherit;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .app {
+      height: 100vh;
+      display: grid;
+      grid-template-rows: 64px 1fr 72px;
+      background:
+        linear-gradient(90deg, rgba(209, 218, 228, .55) 1px, transparent 1px) 0 0 / 28px 28px,
+        linear-gradient(0deg, rgba(209, 218, 228, .45) 1px, transparent 1px) 0 0 / 28px 28px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      background: rgba(255, 255, 255, .82);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+      z-index: 5;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .mark {
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      display: grid;
+      place-items: center;
+      background: #fff;
+      color: var(--blue);
+      font-weight: 900;
+      box-shadow: 0 10px 22px rgba(17, 24, 39, .06);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 21px;
+      line-height: 1;
+      letter-spacing: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .top-actions { display: flex; align-items: center; gap: 8px; }
+
+    .ghost-button, .nav-button {
+      min-height: 40px;
+      padding: 0 15px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, .86);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      transition: transform .18s ease, background .18s ease, border-color .18s ease;
+    }
+
+    .ghost-button:hover, .nav-button:hover {
+      transform: translateY(-1px);
+      background: #fff;
+      border-color: #b8c4d0;
+    }
+
+    .layout {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 240px 1fr;
+    }
+
+    .rail {
+      border-right: 1px solid var(--line);
+      background: rgba(255, 255, 255, .62);
+      backdrop-filter: blur(18px);
+      padding: 30px 16px 24px 20px;
+      overflow: auto;
+    }
+
+    .rail-title {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      margin: 0 4px 18px;
+      letter-spacing: .02em;
+    }
+
+    .rail-list {
+      position: relative;
+      display: grid;
+      gap: 10px;
+    }
+
+    .rail-list::before {
+      content: "";
+      position: absolute;
+      left: 18px;
+      top: 13px;
+      bottom: 13px;
+      width: 1px;
+      background: linear-gradient(180deg, transparent, #aab5c3 8%, #aab5c3 92%, transparent);
+    }
+
+    .rail-item {
+      position: relative;
+      display: grid;
+      grid-template-columns: 32px 42px minmax(0, 1fr);
+      align-items: center;
+      min-height: 40px;
+      border-radius: 12px;
+      padding-right: 8px;
+      color: var(--muted);
+      text-align: left;
+    }
+
+    .rail-item::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      margin-left: 14px;
+      border-radius: 99px;
+      border: 1.5px solid #778397;
+      background: #fff;
+      z-index: 1;
+      transition: all .18s ease;
+    }
+
+    .rail-item span:first-child {
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .rail-item span:last-child {
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .rail-item.is-active {
+      background: linear-gradient(90deg, rgba(36, 107, 254, .13), transparent);
+      color: var(--blue);
+    }
+
+    .rail-item.is-active::before {
+      width: 14px;
+      height: 14px;
+      margin-left: 12px;
+      border: 4px solid var(--blue);
+      box-shadow: 0 0 0 6px rgba(36, 107, 254, .12);
+    }
+
+    .stage-shell {
+      min-height: 0;
+      display: grid;
+      place-items: center;
+      padding: 18px 24px;
+      overflow: hidden;
+    }
+
+    .stage {
+      position: relative;
+      width: min(100%, calc((100vh - 172px) * 16 / 9));
+      aspect-ratio: 16 / 9;
+      filter: drop-shadow(var(--shadow));
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      padding: 36px 50px 28px;
+      border: 1px solid rgba(209, 218, 228, .9);
+      border-radius: 22px;
+      background:
+        radial-gradient(circle at 91% 8%, rgba(36, 107, 254, .08), transparent 24%),
+        linear-gradient(90deg, rgba(209, 218, 228, .23) 1px, transparent 1px) 0 0 / 24px 24px,
+        linear-gradient(0deg, rgba(209, 218, 228, .18) 1px, transparent 1px) 0 0 / 24px 24px,
+        var(--paper);
+      opacity: 0;
+      transform: translateX(30px) scale(.985);
+      pointer-events: none;
+      transition: opacity .32s ease, transform .32s ease;
+      overflow: hidden;
+    }
+
+    .slide::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 5% 92%, rgba(15, 159, 110, .06), transparent 22%),
+        linear-gradient(135deg, rgba(255, 255, 255, .64), transparent 42%);
+      pointer-events: none;
+    }
+
+    .slide.is-active {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+      pointer-events: auto;
+    }
+
+    .slide-inner {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 12px;
+    }
+
+    .slide-head {
+      display: grid;
+      gap: 8px;
+      max-width: 920px;
+    }
+
+    .eyebrow {
+      color: var(--orange);
+      font-size: 12px;
+      font-weight: 850;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 28px;
+      height: 5px;
+      border-radius: 10px;
+      background: var(--orange);
+    }
+
+    .slide-title {
+      margin: 0;
+      max-width: 960px;
+      font-size: clamp(28px, 2.78vw, 40px);
+      line-height: 1.12;
+      letter-spacing: 0;
+      font-weight: 860;
+    }
+
+    .slide-subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(16px, 1.24vw, 20px);
+      line-height: 1.42;
+      max-width: 900px;
+      font-weight: 520;
+    }
+
+    .slide-body {
+      min-height: 0;
+      display: grid;
+      align-items: center;
+    }
+
+    .slide-foot {
+      display: flex;
+      justify-content: space-between;
+      color: #7a8493;
+      font-size: 11px;
+      font-weight: 700;
+      border-top: 1px solid rgba(209, 218, 228, .72);
+      padding-top: 12px;
+    }
+
+    .blue { --accent: var(--blue); --accent-soft: var(--blue-soft); }
+    .green { --accent: var(--green); --accent-soft: var(--green-soft); }
+    .orange { --accent: var(--orange); --accent-soft: var(--orange-soft); }
+    .violet { --accent: var(--violet); --accent-soft: var(--violet-soft); }
+    .red { --accent: var(--red); --accent-soft: var(--red-soft); }
+
+    .card, .callout, .metric, .tool-card, .stack-card {
+      border-radius: 18px;
+      border: 1px solid color-mix(in srgb, var(--accent, var(--blue)) 32%, var(--line));
+      background: rgba(255, 255, 255, .9);
+      box-shadow: 0 16px 40px rgba(17, 24, 39, .07);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr));
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .card {
+      padding: 20px;
+      min-height: 124px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      right: -38px;
+      bottom: -38px;
+      width: 128px;
+      height: 128px;
+      border-radius: 50%;
+      background: var(--accent-soft);
+    }
+
+    .card h3, .tool-card h3 {
+      margin: 0 0 10px;
+      color: var(--accent);
+      font-size: 24px;
+      line-height: 1.1;
+    }
+
+    .card p, .tool-card p, .stack-card p {
+      position: relative;
+      z-index: 1;
+      margin: 0;
+      color: var(--muted);
+      font-size: 14.5px;
+      line-height: 1.5;
+      font-weight: 580;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .pill {
+      min-height: 34px;
+      padding: 0 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid color-mix(in srgb, var(--accent) 38%, #fff);
+      display: inline-flex;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .token-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 18px;
+      border-radius: 18px;
+      border: 1px dashed rgba(15, 159, 110, .58);
+      background: rgba(232, 248, 239, .76);
+      align-content: center;
+      min-height: 104px;
+    }
+
+    .token {
+      min-height: 34px;
+      padding: 0 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(15, 159, 110, .24);
+      background: #fff;
+      color: #225c45;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 800;
+      box-shadow: 0 8px 16px rgba(15, 159, 110, .08);
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
+      gap: 22px;
+      align-items: center;
+    }
+
+    .node {
+      min-height: 98px;
+      border-radius: 18px;
+      border: 1px solid color-mix(in srgb, var(--accent) 56%, #fff);
+      background: linear-gradient(180deg, rgba(255,255,255,.96), var(--accent-soft));
+      padding: 16px 18px;
+      box-shadow: 0 15px 34px rgba(17, 24, 39, .07);
+      position: relative;
+    }
+
+    .node::after {
+      content: "";
+      position: absolute;
+      right: -19px;
+      top: 50%;
+      width: 16px;
+      height: 2px;
+      background: #8792a3;
+    }
+
+    .node:last-child::after { display: none; }
+
+    .node strong {
+      display: block;
+      color: var(--accent);
+      font-size: 21px;
+      line-height: 1.15;
+      margin-bottom: 8px;
+    }
+
+    .node small {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+      font-weight: 650;
+    }
+
+    .metric {
+      min-height: 118px;
+      padding: 18px;
+      text-align: center;
+      background: rgba(255,255,255,.82);
+    }
+
+    .metric b {
+      display: block;
+      color: var(--accent);
+      font-size: 34px;
+      line-height: 1;
+      margin-bottom: 10px;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .callout {
+      padding: 18px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 23px;
+      font-weight: 880;
+      line-height: 1.32;
+    }
+
+    .callout small {
+      display: block;
+      color: var(--muted);
+      font-size: 15px;
+      margin-top: 9px;
+      line-height: 1.48;
+      font-weight: 650;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .app-map {
+      display: grid;
+      grid-template-columns: 1fr 1.25fr;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .hub {
+      min-height: 250px;
+      border-radius: 26px;
+      background:
+        radial-gradient(circle, rgba(36, 107, 254, .95) 0 4px, transparent 5px) 34px 34px / 42px 42px,
+        linear-gradient(180deg, #fff, var(--blue-soft));
+      border: 1px solid rgba(36, 107, 254, .36);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 18px 46px rgba(36, 107, 254, .12);
+    }
+
+    .hub span {
+      width: 110px;
+      height: 110px;
+      border-radius: 32px;
+      display: grid;
+      place-items: center;
+      background: #fff;
+      color: var(--blue);
+      border: 1px solid rgba(36, 107, 254, .35);
+      font-size: 30px;
+      font-weight: 900;
+      box-shadow: 0 20px 40px rgba(36, 107, 254, .16);
+    }
+
+    .chat-window {
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 20px;
+      box-shadow: 0 16px 40px rgba(17, 24, 39, .07);
+    }
+
+    .bubble {
+      max-width: 82%;
+      min-height: 48px;
+      border-radius: 16px;
+      padding: 12px 14px;
+      margin: 10px 0;
+      font-weight: 720;
+      line-height: 1.4;
+    }
+
+    .bubble.user {
+      margin-left: auto;
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .bubble.assistant {
+      background: var(--green-soft);
+      color: var(--green);
+    }
+
+    .context-box {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 16px;
+      border: 1px dashed rgba(15, 159, 110, .48);
+      background: rgba(232, 248, 239, .62);
+      color: #225c45;
+      font-size: 14px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .zip {
+      display: grid;
+      grid-template-columns: .95fr 1.05fr;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .zip-file {
+      min-height: 260px;
+      border-radius: 26px;
+      background:
+        linear-gradient(90deg, rgba(36,107,254,.14) 0 28%, transparent 28%),
+        #fff;
+      border: 1px solid var(--line);
+      box-shadow: 0 18px 46px rgba(17, 24, 39, .08);
+      padding: 26px 26px 26px 34%;
+      display: grid;
+      align-content: center;
+      position: relative;
+    }
+
+    .zip-file::before {
+      content: "ZIP";
+      position: absolute;
+      left: 34px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 104px;
+      height: 104px;
+      border-radius: 28px;
+      display: grid;
+      place-items: center;
+      background: var(--blue);
+      color: #fff;
+      font-size: 30px;
+      font-weight: 950;
+      box-shadow: 0 18px 34px rgba(36, 107, 254, .24);
+    }
+
+    .zip-file h3 {
+      margin: 0 0 12px;
+      font-size: 31px;
+      color: var(--blue);
+    }
+
+    .zip-file p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.52;
+      font-weight: 600;
+    }
+
+    .traffic {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      align-items: center;
+    }
+
+    .signal {
+      min-height: 188px;
+      border-radius: 24px;
+      padding: 22px;
+      background: #fff;
+      border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--line));
+      box-shadow: 0 16px 40px rgba(17, 24, 39, .07);
+    }
+
+    .signal .lamp {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 8px var(--accent-soft);
+      margin-bottom: 20px;
+    }
+
+    .signal h3 {
+      margin: 0 0 10px;
+      font-size: 25px;
+      color: var(--accent);
+    }
+
+    .signal p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.48;
+      font-weight: 650;
+    }
+
+    .council {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .avatar {
+      border-radius: 18px;
+      border: 1px solid color-mix(in srgb, var(--accent) 36%, var(--line));
+      background: #fff;
+      padding: 16px 12px;
+      text-align: center;
+      box-shadow: 0 14px 32px rgba(17, 24, 39, .06);
+    }
+
+    .avatar .dot {
+      width: 44px;
+      height: 44px;
+      border-radius: 16px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      display: grid;
+      place-items: center;
+      margin: 0 auto 12px;
+      font-weight: 900;
+    }
+
+    .avatar b {
+      display: block;
+      font-size: 16px;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+
+    .avatar span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      font-weight: 700;
+    }
+
+    .think-path {
+      height: 230px;
+      border-radius: 26px;
+      border: 1px solid var(--line);
+      background: #fff;
+      position: relative;
+      box-shadow: 0 18px 46px rgba(17,24,39,.07);
+      overflow: hidden;
+    }
+
+    .think-path .prompt {
+      position: absolute;
+      left: 28px;
+      top: 86px;
+      width: 110px;
+      height: 58px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: var(--blue);
+      font-weight: 900;
+    }
+
+    .think-path .answer {
+      position: absolute;
+      right: 28px;
+      top: 86px;
+      width: 128px;
+      height: 58px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: var(--green);
+      font-weight: 900;
+    }
+
+    .path-line {
+      position: absolute;
+      left: 158px;
+      right: 168px;
+      height: 3px;
+      top: var(--y);
+      background: var(--accent);
+      transform: rotate(var(--r));
+      transform-origin: left center;
+      opacity: .75;
+      border-radius: 999px;
+    }
+
+    .path-dot {
+      position: absolute;
+      right: 152px;
+      top: calc(var(--y) - 7px);
+      width: 17px;
+      height: 17px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 14%, transparent);
+    }
+
+    .search-diagram {
+      display: grid;
+      grid-template-columns: 1fr 1.05fr;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .search-box {
+      padding: 22px;
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background: #fff;
+      box-shadow: 0 18px 46px rgba(17,24,39,.07);
+    }
+
+    .search-input {
+      min-height: 54px;
+      border-radius: 999px;
+      background: var(--paper-2);
+      border: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      padding: 0 18px;
+      color: var(--muted);
+      font-weight: 760;
+      margin-bottom: 16px;
+    }
+
+    .result-row {
+      display: grid;
+      grid-template-columns: 26px 1fr;
+      gap: 10px;
+      padding: 10px 0;
+      border-top: 1px solid #edf1f5;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .result-row b {
+      width: 24px;
+      height: 24px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-size: 12px;
+    }
+
+    .research-board {
+      display: grid;
+      grid-template-columns: .85fr 1.15fr;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .source-stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    .source {
+      min-height: 48px;
+      border-radius: 14px;
+      background: #fff;
+      border: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 750;
+      box-shadow: 0 10px 22px rgba(17,24,39,.045);
+    }
+
+    .report {
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background: #fff;
+      box-shadow: 0 18px 46px rgba(17,24,39,.07);
+      padding: 22px;
+    }
+
+    .report h3 {
+      margin: 0 0 14px;
+      font-size: 29px;
+      color: var(--violet);
+    }
+
+    .report .line {
+      height: 10px;
+      border-radius: 999px;
+      background: #e7ecf3;
+      margin: 12px 0;
+      overflow: hidden;
+    }
+
+    .report .line i {
+      display: block;
+      height: 100%;
+      width: var(--w);
+      background: var(--violet);
+      border-radius: 999px;
+    }
+
+    .doc-view {
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: 26px;
+      align-items: stretch;
+    }
+
+    .document {
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 22px;
+      box-shadow: 0 18px 46px rgba(17,24,39,.07);
+    }
+
+    .doc-line {
+      height: 10px;
+      border-radius: 99px;
+      background: #e6ebf2;
+      margin: 12px 0;
+    }
+
+    .doc-line.short { width: 72%; }
+    .doc-line.med { width: 88%; }
+
+    .tool-card {
+      padding: 20px;
+      min-height: 176px;
+    }
+
+    .code-panel {
+      border-radius: 22px;
+      background: #101827;
+      color: #d8e1ee;
+      border: 1px solid #253244;
+      padding: 20px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 14px;
+      line-height: 1.7;
+      box-shadow: 0 18px 46px rgba(17,24,39,.15);
+    }
+
+    .code-panel .kw { color: #86efac; }
+    .code-panel .num { color: #93c5fd; }
+    .code-panel .warn { color: #fdba74; }
+
+    .mini-app {
+      display: grid;
+      grid-template-columns: .85fr 1.15fr;
+      gap: 26px;
+      align-items: center;
+    }
+
+    .flashcard {
+      min-height: 220px;
+      border-radius: 26px;
+      background: linear-gradient(180deg, #fff, var(--green-soft));
+      border: 1px solid rgba(15, 159, 110, .34);
+      box-shadow: 0 18px 46px rgba(17,24,39,.07);
+      padding: 26px;
+      display: grid;
+      align-content: center;
+      text-align: center;
+      color: var(--green);
+      font-size: 25px;
+      line-height: 1.35;
+      font-weight: 880;
+    }
+
+    .diagram-tree {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .tree-root, .tree-row > div {
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: #fff;
+      min-height: 48px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-weight: 800;
+      text-align: center;
+      padding: 10px;
+      box-shadow: 0 12px 26px rgba(17,24,39,.05);
+    }
+
+    .tree-root {
+      background: var(--orange-soft);
+      color: var(--orange);
+      border-color: rgba(237, 107, 34, .35);
+      font-size: 18px;
+    }
+
+    .tree-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .editor {
+      display: grid;
+      grid-template-columns: .82fr 1.18fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .file-list, .composer {
+      border-radius: 22px;
+      background: #fff;
+      border: 1px solid var(--line);
+      box-shadow: 0 18px 46px rgba(17,24,39,.07);
+      padding: 18px;
+    }
+
+    .file {
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-radius: 10px;
+      padding: 0 10px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 750;
+    }
+
+    .file.active { background: var(--blue-soft); color: var(--blue); }
+
+    .composer .task {
+      min-height: 64px;
+      border-radius: 16px;
+      background: var(--violet-soft);
+      color: var(--violet);
+      padding: 14px;
+      font-weight: 820;
+      line-height: 1.35;
+      margin-bottom: 14px;
+    }
+
+    .diff {
+      display: grid;
+      gap: 8px;
+    }
+
+    .diff span {
+      min-height: 30px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .diff .add { background: var(--green-soft); color: var(--green); }
+    .diff .cmd { background: var(--orange-soft); color: var(--orange); }
+
+    .voice-wave {
+      min-height: 250px;
+      border-radius: 28px;
+      background: #fff;
+      border: 1px solid var(--line);
+      box-shadow: 0 18px 46px rgba(17,24,39,.07);
+      display: grid;
+      place-items: center;
+      padding: 28px;
+    }
+
+    .bars {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      height: 128px;
+    }
+
+    .bars i {
+      width: 12px;
+      height: var(--h);
+      border-radius: 99px;
+      background: var(--blue);
+      opacity: .9;
+    }
+
+    .podcast {
+      display: grid;
+      grid-template-columns: .95fr 1.05fr;
+      gap: 26px;
+      align-items: center;
+    }
+
+    .player {
+      border-radius: 28px;
+      background: linear-gradient(180deg, #fff, var(--violet-soft));
+      border: 1px solid rgba(117, 76, 255, .34);
+      padding: 26px;
+      box-shadow: 0 18px 46px rgba(17,24,39,.07);
+    }
+
+    .disc {
+      width: 128px;
+      height: 128px;
+      border-radius: 50%;
+      margin: 0 auto 20px;
+      background:
+        radial-gradient(circle, #fff 0 12px, var(--violet) 13px 30px, #24194a 31px 100%);
+      box-shadow: 0 18px 36px rgba(117,76,255,.22);
+    }
+
+    .progress {
+      height: 10px;
+      border-radius: 99px;
+      background: rgba(117,76,255,.18);
+      overflow: hidden;
+    }
+
+    .progress i {
+      display: block;
+      width: 58%;
+      height: 100%;
+      background: var(--violet);
+      border-radius: 99px;
+    }
+
+    .modalities {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .mod-card {
+      min-height: 188px;
+      border-radius: 22px;
+      border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line));
+      background: #fff;
+      padding: 20px 16px;
+      text-align: center;
+      box-shadow: 0 16px 38px rgba(17,24,39,.065);
+    }
+
+    .icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 16px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 27px;
+      font-weight: 900;
+    }
+
+    .mod-card b {
+      display: block;
+      color: var(--accent);
+      font-size: 19px;
+      margin-bottom: 10px;
+    }
+
+    .mod-card span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.42;
+      font-weight: 680;
+    }
+
+    .memory {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 20px;
+    }
+
+    .memory .stack-card {
+      min-height: 224px;
+      padding: 22px;
+    }
+
+    .stack-card h3 {
+      margin: 0 0 14px;
+      color: var(--accent);
+      font-size: 26px;
+    }
+
+    .decision-table {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .decision-card {
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--line));
+      min-height: 118px;
+      padding: 16px;
+      box-shadow: 0 14px 32px rgba(17,24,39,.055);
+    }
+
+    .decision-card b {
+      display: block;
+      color: var(--accent);
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    .decision-card span {
+      color: var(--muted);
+      font-size: 12.5px;
+      line-height: 1.42;
+      font-weight: 700;
+    }
+
+    .bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 0 24px;
+      background: rgba(255,255,255,.78);
+      backdrop-filter: blur(18px);
+      border-top: 1px solid var(--line);
+      z-index: 5;
+    }
+
+    .bottom-left, .bottom-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .counter {
+      color: #354052;
+      font-weight: 850;
+      min-width: 70px;
+      text-align: center;
+    }
+
+    .progress-track {
+      width: min(38vw, 430px);
+      height: 8px;
+      border-radius: 999px;
+      background: #dce4ec;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--blue), var(--green));
+      transition: width .25s ease;
+    }
+
+    .overview .slide {
+      position: relative;
+      opacity: 1;
+      transform: none;
+      pointer-events: auto;
+      height: auto;
+      min-height: 240px;
+    }
+
+    .overview .stage-shell {
+      overflow: auto;
+      align-items: start;
+      place-items: stretch;
+    }
+
+    .overview .stage {
+      width: 100%;
+      aspect-ratio: auto;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(320px, 1fr));
+      gap: 18px;
+      filter: none;
+    }
+
+    .overview .slide {
+      padding: 22px;
+      border-radius: 18px;
+      cursor: pointer;
+    }
+
+    .overview .slide-body { display: none; }
+    .overview .slide-title { font-size: 22px; }
+    .overview .slide-subtitle { font-size: 13px; }
+    .overview .slide-foot { margin-top: 18px; }
+
+    @media (max-width: 980px) {
+      body { overflow: auto; }
+      .app { min-height: 100vh; height: auto; grid-template-rows: auto auto auto; }
+      .topbar, .bottom { min-height: 64px; padding: 12px 16px; flex-wrap: wrap; }
+      .layout { grid-template-columns: 1fr; }
+      .rail { display: none; }
+      .stage-shell { padding: 16px; overflow: visible; }
+      .stage { width: 100%; aspect-ratio: auto; min-height: 70vh; filter: none; }
+      .slide { position: relative; display: none; min-height: 70vh; padding: 28px 22px; border-radius: 18px; }
+      .slide.is-active { display: block; }
+      .slide-title { font-size: 30px; }
+      .slide-subtitle { font-size: 16px; }
+      .grid, .flow, .modalities, .decision-table, .memory, .council { grid-template-columns: 1fr; }
+      .split, .app-map, .zip, .search-diagram, .research-board, .doc-view, .mini-app, .editor, .podcast { grid-template-columns: 1fr; }
+      .node::after { display: none; }
+      .hint { display: none; }
+      .progress-track { width: 42vw; }
+      .overview .stage { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark">LLM</div>
+        <h1>GPT 用法：把 LLM 当作工具箱</h1>
+      </div>
+      <div class="top-actions">
+        <button class="ghost-button" id="overviewTop" type="button">总览</button>
+        <button class="ghost-button" id="fullscreenBtn" type="button">全屏</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside class="rail" aria-label="幻灯片目录">
+        <div class="rail-title"><span>LECTURE MAP</span><span id="railCount">18</span></div>
+        <div class="rail-list" id="railList"></div>
+      </aside>
+
+      <section class="stage-shell" aria-live="polite">
+        <div class="stage" id="stage">
+          <article class="slide is-active" data-title="生态地图" data-section="01">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">LLM Apps</div>
+                <h2 class="slide-title">ChatGPT 不是一个按钮，而是一套工具生态</h2>
+                <p class="slide-subtitle">模型、工具、文件、搜索、代码、多模态和记忆共同塑造最终体验。</p>
+              </header>
+              <div class="slide-body">
+                <div class="app-map">
+                  <div class="hub"><span>GPT</span></div>
+                  <div class="grid" style="--cols:3">
+                    <div class="card blue"><h3>模型</h3><p>GPT-4o、Claude、Gemini、Grok、DeepSeek。</p></div>
+                    <div class="card green"><h3>工具</h3><p>搜索、代码、深度研究、Artifacts、Cursor。</p></div>
+                    <div class="card orange"><h3>模态</h3><p>文本、语音、图片、视频、播客。</p></div>
+                    <div class="card violet"><h3>个性化</h3><p>Memory、指令、自定义 GPT。</p></div>
+                    <div class="card red"><h3>平台</h3><p>Web、桌面、手机和价格层级。</p></div>
+                    <div class="card green"><h3>原则</h3><p>先判断任务，再选择入口。</p></div>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Sections 1, 19</span><span>01 / 18</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="上下文窗口" data-section="02">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Context Window</div>
+                <h2 class="slide-title">聊天气泡只是表象，底层是一条 token 流</h2>
+                <p class="slide-subtitle">用户和模型轮流向同一个一维序列写入内容；New Chat 会清空这段工作记忆。</p>
+              </header>
+              <div class="slide-body">
+                <div class="split">
+                  <div class="chat-window">
+                    <div class="bubble user">写一首关于 LLM 的俳句</div>
+                    <div class="bubble assistant">文字像溪流，回声不断延展。</div>
+                    <div class="context-box">user + assistant + special tokens → context window</div>
+                  </div>
+                  <div>
+                    <div class="token-strip">
+                      <span class="token">&lt;user&gt;</span><span class="token">写</span><span class="token">一首</span><span class="token">俳句</span><span class="token">&lt;/user&gt;</span>
+                      <span class="token">&lt;assistant&gt;</span><span class="token">文字</span><span class="token">像</span><span class="token">溪流</span><span class="token">&lt;done&gt;</span>
+                    </div>
+                    <div class="pill-row green"><span class="pill">15 token 输入</span><span class="pill">19 token 回复</span><span class="pill">42 token 对话协议</span></div>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Section 2</span><span>02 / 18</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="压缩包模型" data-section="03">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Mental Model</div>
+                <h2 class="slide-title">默认情况下，你在和一个有损压缩包说话</h2>
+                <p class="slide-subtitle">预训练压入知识，后训练贴上助手人格；工具不是模型本体自带的。</p>
+              </header>
+              <div class="slide-body">
+                <div class="zip">
+                  <div class="zip-file">
+                    <h3>1TB · 1T 参数</h3>
+                    <p>互联网文本被压缩成概率性、模糊、可能过时的参数记忆。常见知识更牢，罕见知识更脆。</p>
+                  </div>
+                  <div class="grid" style="--cols:2">
+                    <div class="card blue"><h3>Pre-training</h3><p>读互联网文档，预测下一个 token，形成世界知识。</p></div>
+                    <div class="card green"><h3>Post-training</h3><p>换成对话数据，让模型呈现助手人格。</p></div>
+                    <div class="card orange"><h3>Knowledge cutoff</h3><p>近期事件通常不在参数中，需要工具补充。</p></div>
+                    <div class="card red"><h3>No tools yet</h3><p>没有搜索、计算器、Python 和网页，除非产品层接入。</p></div>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Section 3</span><span>03 / 18</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="直接问" data-section="04">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Ask Directly?</div>
+                <h2 class="slide-title">直接问模型，要满足常见、稳定、低风险</h2>
+                <p class="slide-subtitle">课程概念、LaTeX 写法和邮件初稿可以直接问；近期通知和精确计算要换工具。</p>
+              </header>
+              <div class="slide-body">
+                <div class="traffic">
+                  <div class="signal green">
+                    <div class="lamp"></div>
+                    <h3>可以直接问</h3>
+                    <p>常见定义、LaTeX 写法、英文邮件、低风险学习建议。</p>
+                  </div>
+                  <div class="signal orange">
+                    <div class="lamp"></div>
+                    <h3>问后核查</h3>
+                    <p>课程安排、奖学金政策、竞赛通知、图书馆开放时间。</p>
+                  </div>
+                  <div class="signal red">
+                    <div class="lamp"></div>
+                    <h3>不要只靠记忆</h3>
+                    <p>最新通知、高风险医疗金融、课程政策、精确计算。</p>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Sections 4-5</span><span>04 / 18</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="模型层级" data-section="05">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Model Picker</div>
+                <h2 class="slide-title">先看左上角：你实际在用哪个模型？</h2>
+                <p class="slide-subtitle">价格层级、模型大小、工具接入和应用差异，会直接决定回答质量。</p>
+              </header>
+              <div class="slide-body">
+                <div class="stack">
+                  <div class="council">
+                    <div class="avatar blue"><div class="dot">O</div><b>ChatGPT</b><span>功能最全的默认选择</span></div>
+                    <div class="avatar green"><div class="dot">C</div><b>Claude</b><span>写作、Artifacts、代码</span></div>
+                    <div class="avatar orange"><div class="dot">G</div><b>Gemini</b><span>Google 生态和模型选择</span></div>
+                    <div class="avatar red"><div class="dot">Q</div><b>千问</b><span>中文、代码和开源模型生态</span></div>
+                    <div class="avatar violet"><div class="dot">D</div><b>豆包</b><span>日常学习、写作和多模态</span></div>
+                  </div>
+                  <div class="grid" style="--cols:3">
+                    <div class="metric blue"><b>Free</b><span>可能是更小模型，便宜快但更容易错。</span></div>
+                    <div class="metric green"><b>Plus</b><span>更强模型和有限配额，适合高频普通工作。</span></div>
+                    <div class="metric orange"><b>Pro</b><span>更高限额、思考模型、深度研究等高级能力。</span></div>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Section 6</span><span>05 / 18</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="思考模型" data-section="06">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Thinking Models</div>
+                <h2 class="slide-title">困难题再开 Think：用时间换准确率</h2>
+                <p class="slide-subtitle">强化学习让模型学会检查、回溯和换角度；数学、代码、推理最受益。</p>
+              </header>
+              <div class="slide-body">
+                <div class="split">
+                  <div class="think-path">
+                    <div class="prompt">Bug</div>
+                    <i class="path-line" style="--y:54px;--r:-5deg;--accent:var(--red)"></i><i class="path-dot" style="--y:54px;--accent:var(--red)"></i>
+                    <i class="path-line" style="--y:92px;--r:3deg;--accent:var(--orange)"></i><i class="path-dot" style="--y:92px;--accent:var(--orange)"></i>
+                    <i class="path-line" style="--y:132px;--r:0deg;--accent:var(--green)"></i><i class="path-dot" style="--y:132px;--accent:var(--green)"></i>
+                    <i class="path-line" style="--y:172px;--r:5deg;--accent:var(--blue)"></i><i class="path-dot" style="--y:172px;--accent:var(--blue)"></i>
+                    <div class="answer">Solved</div>
+                  </div>
+                  <div class="grid" style="--cols:2">
+                    <div class="card green"><h3>适合</h3><p>梯度检查失败、数学题、多步代码推理、复杂逻辑。</p></div>
+                    <div class="card orange"><h3>代价</h3><p>要等几十秒到几分钟，生成很多思考 token。</p></div>
+                    <div class="card blue"><h3>策略</h3><p>先用快速模型；不够好再切 o1/o3/R1/Think。</p></div>
+                    <div class="card red"><h3>不必</h3><p>旅行灵感、普通写作、简单常识不值得慢速思考。</p></div>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Section 7</span><span>06 / 18</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="搜索工具" data-section="07">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Search Tool</div>
+                <h2 class="slide-title">搜索不是“模型知道了”，而是网页进了上下文</h2>
+                <p class="slide-subtitle">近期、变化快、小众、需要引用的问题，应优先打开搜索。</p>
+              </header>
+              <div class="slide-body">
+                <div class="search-diagram">
+                  <div class="search-box">
+                    <div class="search-input">今年数学建模竞赛报名截止时间</div>
+                    <div class="result-row"><b>1</b><span>网页结果被访问、抽取、放入 context window</span></div>
+                    <div class="result-row"><b>2</b><span>模型引用上下文里的来源回答问题</span></div>
+                    <div class="result-row"><b>3</b><span>用户点开 citation 核对是否可靠</span></div>
+                  </div>
+                  <div class="flow" style="--cols:4">
+                    <div class="node blue"><strong>Query</strong><small>模型生成搜索词</small></div>
+                    <div class="node green"><strong>Web</strong><small>搜索和访问网页</small></div>
+                    <div class="node orange"><strong>Context</strong><small>网页文本写入窗口</small></div>
+                    <div class="node violet"><strong>Answer</strong><small>基于来源回答</small></div>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Section 8</span><span>07 / 18</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="深度研究" data-section="08">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Deep Research</div>
+                <h2 class="slide-title">Deep Research 是搜索 + 思考 + 长时间报告</h2>
+                <p class="slide-subtitle">它能整理多来源资料，但输出仍是第一稿，不是最终事实。</p>
+              </header>
+              <div class="slide-body">
+                <div class="research-board">
+                  <div class="source-stack">
+                    <div class="source">统计学习 vs 最优化方向</div>
+                    <div class="source">课程主页 / 论文 / 培养方案</div>
+                    <div class="source">先修课 / 研究题目 / 就业去向</div>
+                    <div class="source">18 sources · 8 min</div>
+                  </div>
+                  <div class="report">
+                    <h3>Research Report</h3>
+                    <div class="line"><i style="--w:92%"></i></div>
+                    <div class="line"><i style="--w:74%"></i></div>
+                    <div class="line"><i style="--w:86%"></i></div>
+                    <div class="line"><i style="--w:64%"></i></div>
+                    <div class="pill-row violet"><span class="pill">方向选择</span><span class="pill">文献初筛</span><span class="pill">竞赛选题</span><span class="pill">必须查引用</span></div>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Section 9</span><span>08 / 18</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="文件阅读" data-section="09">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">File Upload</div>
+                <h2 class="slide-title">先把材料放进窗口，再让模型阅读</h2>
+                <p class="slide-subtitle">上传论文 PDF、教材章节或原文，比让模型凭记忆总结可靠得多。</p>
+              </header>
+              <div class="slide-body">
+                <div class="doc-view">
+                  <div class="document">
+                    <div class="pill-row blue" style="margin-top:0"><span class="pill">PDF</span><span class="pill">Book chapter</span><span class="pill">Text attachment</span></div>
+                    <div class="doc-line med"></div><div class="doc-line"></div><div class="doc-line short"></div>
+                    <div class="doc-line med"></div><div class="doc-line"></div><div class="doc-line short"></div>
+                    <div class="doc-line"></div><div class="doc-line med"></div>
+                  </div>
+                  <div class="grid" style="--cols:2">
+                    <div class="card green"><h3>论文</h3><p>先摘要，再围绕 abstract、introduction、method 和图表追问。</p></div>
+                    <div class="card orange"><h3>书籍</h3><p>《国富论》这类古典文本适合逐章复制进上下文。</p></div>
+                    <div class="card red"><h3>注意</h3><p>PDF 图片和表格可能丢失或误读，关键数据要确认。</p></div>
+                    <div class="card blue"><h3>习惯</h3><p>不要独自读难材料，带着 LLM 慢慢拆解。</p></div>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Section 10</span><span>09 / 18</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="代码工具" data-section="10">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Code Interpreter</div>
+                <h2 class="slide-title">精确计算和数据分析，让模型写代码跑出来</h2>
+                <p class="slide-subtitle">高级数据分析很强，但像初级分析师一样需要审查。</p>
+              </header>
+              <div class="slide-body">
+                <div class="split">
+                  <div class="code-panel">
+                    <span class="kw">import</span> numpy <span class="kw">as</span> np<br>
+                    scores = np.nan_to_num(scores, nan=<span class="num">0</span>) <span class="warn"># implicit assumption</span><br>
+                    coef = np.polyfit(np.log(n), np.log(error), <span class="num">1</span>)<br>
+                    rate = -coef[<span class="num">0</span>]<br>
+                    <span class="kw">print</span>(rate)  <span class="warn"># check convergence rate</span>
+                  </div>
+                  <div class="grid" style="--cols:2">
+                    <div class="card green"><h3>适合</h3><p>大乘法、矩阵运算、数值实验、作图、拟合、可视化。</p></div>
+                    <div class="card orange"><h3>差异</h3><p>ChatGPT 有 Python，Claude 可写 JS，Grok/Gemini 未必能运行。</p></div>
+                    <div class="card red"><h3>风险</h3><p>隐含假设、图表误读、自然语言结论和变量不一致。</p></div>
+                    <div class="card blue"><h3>做法</h3><p>读代码、打印变量、核对图，必要时重跑。</p></div>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Section 11</span><span>10 / 18</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="Artifacts" data-section="11">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Artifacts</div>
+                <h2 class="slide-title">Claude 可以把一次性材料变成小应用和图示</h2>
+                <p class="slide-subtitle">Flashcards、Mermaid 概念图、小游戏，本质上都是模型写代码并在界面里运行。</p>
+              </header>
+              <div class="slide-body">
+                <div class="mini-app">
+                  <div class="flashcard">什么是 Cauchy 列？<br><small>Click to reveal</small></div>
+                  <div class="diagram-tree">
+                    <div class="tree-root">随机过程期末复习结构</div>
+                    <div class="tree-row">
+                      <div>马尔可夫链</div><div>泊松过程</div><div>布朗运动</div>
+                    </div>
+                    <div class="tree-row">
+                      <div>转移矩阵</div><div>独立增量</div><div>鞅与停时</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Section 12</span><span>11 / 18</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="Cursor" data-section="12">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Vibe Coding</div>
+                <h2 class="slide-title">专业编程要把 LLM 放进代码库，而不是关在网页里</h2>
+                <p class="slide-subtitle">Cursor / Composer 能读文件、改多处、跑命令；你仍然要审查和接管。</p>
+              </header>
+              <div class="slide-body">
+                <div class="editor">
+                  <div class="file-list">
+                    <div class="file active">solver.py</div>
+                    <div class="file">plot_error.py</div>
+                    <div class="file">report.tex</div>
+                    <div class="file">README.md</div>
+                    <div class="pill-row blue"><span class="pill">Command K</span><span class="pill">Command L</span><span class="pill">Command I</span></div>
+                  </div>
+                  <div class="composer">
+                    <div class="task">给数值分析课程项目加入误差收敛图，并更新实验报告。</div>
+                    <div class="diff">
+                      <span class="cmd">python plot_error.py --loglog</span>
+                      <span class="add">+ plt.loglog(n, error, marker="o")</span>
+                      <span class="add">+ \\includegraphics{figures/error.pdf}</span>
+                      <span class="cmd">pytest tests/test_solver.py</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Section 13</span><span>12 / 18</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="语音" data-section="13">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Voice</div>
+                <h2 class="slide-title">先用语音少打字，再区分假音频和真音频</h2>
+                <p class="slide-subtitle">Speech-to-text 仍是文本；Advanced Voice 直接处理音频 token。</p>
+              </header>
+              <div class="slide-body">
+                <div class="split">
+                  <div class="voice-wave">
+                    <div class="bars">
+                      <i style="--h:44px"></i><i style="--h:78px"></i><i style="--h:118px"></i><i style="--h:64px"></i><i style="--h:126px"></i><i style="--h:84px"></i><i style="--h:52px"></i><i style="--h:106px"></i>
+                    </div>
+                    <div class="pill-row blue"><span class="pill">Superwhisper / F5</span><span class="pill">Read aloud</span><span class="pill">Advanced Voice</span></div>
+                  </div>
+                  <div class="grid" style="--cols:2">
+                    <div class="card green"><h3>假音频</h3><p>语音转文字、文字转语音，LLM 本体仍读写文本。</p></div>
+                    <div class="card violet"><h3>真音频</h3><p>模型直接听和说，能变口吻、被打断、生成音频。</p></div>
+                    <div class="card orange"><h3>限制</h3><p>专有名词易转写错，Advanced Voice 可能过度拒绝。</p></div>
+                    <div class="card red"><h3>Grok</h3><p>语音模式更娱乐化，边界和人格与 ChatGPT 不同。</p></div>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Sections 14-15</span><span>13 / 18</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="NotebookLM" data-section="14">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Podcast</div>
+                <h2 class="slide-title">NotebookLM 把资料变成按需播客</h2>
+                <p class="slide-subtitle">上传 PDF、网页、文本，生成可听的 Deep Dive；适合散步、开车和小众主题。</p>
+              </header>
+              <div class="slide-body">
+                <div class="podcast">
+                  <div class="player">
+                    <div class="disc"></div>
+                    <div class="progress"><i></i></div>
+                    <div class="pill-row violet"><span class="pill">Customize</span><span class="pill">Regenerate</span><span class="pill">Interactive mode</span></div>
+                  </div>
+                  <div class="grid" style="--cols:2">
+                    <div class="card blue"><h3>Sources</h3><p>PDF、网页、raw text 进入上下文，可聊天提问。</p></div>
+                    <div class="card green"><h3>Deep Dive</h3><p>几分钟后生成 30 分钟左右定制播客。</p></div>
+                    <div class="card orange"><h3>场景</h3><p>被动了解不熟领域，比如统计学习论文或暑研方向。</p></div>
+                    <div class="card violet"><h3>特点</h3><p>可以在播客中打断并提问，像资料陪读。</p></div>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Section 15</span><span>14 / 18</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="图片视频" data-section="15">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Multimodal</div>
+                <h2 class="slide-title">图片和视频也可以进入 token 化框架</h2>
+                <p class="slide-subtitle">先让模型看见、转写、确认，再让它解释；生成能力通常由专门模型完成。</p>
+              </header>
+              <div class="slide-body">
+                <div class="modalities">
+                  <div class="mod-card blue"><div class="icon">OCR</div><b>图片输入</b><span>板书、课件截图、教材公式、论文图表、宿舍通知。</span></div>
+                  <div class="mod-card green"><div class="icon">IMG</div><b>图片生成</b><span>DALL·E / Ideogram 适合海报、汇报封面和图标素材。</span></div>
+                  <div class="mod-card orange"><div class="icon">CAM</div><b>视频理解</b><span>手机摄像头识别书本、仪器读数、教室白板和地图。</span></div>
+                  <div class="mod-card violet"><div class="icon">VID</div><b>视频生成</b><span>可做社团宣传或课程展示素材，但仍要核对内容。</span></div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Section 16</span><span>15 / 18</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="记忆与指令" data-section="16">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Personalization</div>
+                <h2 class="slide-title">Memory 和 Custom Instructions 都是在影响未来上下文</h2>
+                <p class="slide-subtitle">一个记录用户偏好，一个固定回答风格；两者都需要管理。</p>
+              </header>
+              <div class="slide-body">
+                <div class="memory">
+                  <div class="stack-card blue"><h3>当前上下文</h3><p>本次对话的工作记忆。New Chat 后清空，适合当前任务材料。</p><div class="pill-row blue"><span class="pill">short-term</span></div></div>
+                  <div class="stack-card green"><h3>Memory</h3><p>把“偏好严格定义 + 例子 + 反例”这类学习偏好保存成摘要，跨对话预先提供。</p><div class="pill-row green"><span class="pill">user facts</span></div></div>
+                  <div class="stack-card orange"><h3>Custom Instructions</h3><p>长期设定语气、身份、解释风格和默认格式，例如默认证明讲解结构。</p><div class="pill-row orange"><span class="pill">global style</span></div></div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Section 17</span><span>16 / 18</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="自定义 GPT" data-section="17">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Custom GPTs</div>
+                <h2 class="slide-title">高频 prompt 应该封装成自己的小工具</h2>
+                <p class="slide-subtitle">Few-shot 示例、XML-like 标签和固定输出格式，让重复任务更稳定。</p>
+              </header>
+              <div class="slide-body">
+                <div class="grid" style="--cols:3">
+                  <div class="card green"><h3>术语卡片</h3><p>英文教材段落 → 中文解释 → Anki 卡片。</p><div class="pill-row green"><span class="pill">few-shot</span></div></div>
+                  <div class="card blue"><h3>论文翻译</h3><p>先整段翻译，再逐句拆解符号和假设。</p><div class="pill-row blue"><span class="pill">examples</span></div></div>
+                  <div class="card orange"><h3>板书 OCR</h3><p>黑板截图 → OCR → LaTeX → 推导步骤拆解。</p><div class="pill-row orange"><span class="pill">multimodal</span></div></div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Section 18</span><span>17 / 18</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="使用决策表" data-section="18">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Checklist</div>
+                <h2 class="slide-title">会用 LLM，就是会给任务选择正确入口</h2>
+                <p class="slide-subtitle">不要把所有问题都丢给聊天框；该换模型、开工具、给材料、跑代码时就换。</p>
+              </header>
+              <div class="slide-body">
+                <div class="decision-table">
+                  <div class="decision-card green"><b>常见稳定</b><span>直接问强模型，重要时核查。</span></div>
+                  <div class="decision-card blue"><b>近期事实</b><span>打开搜索，要求引用，查看来源。</span></div>
+                  <div class="decision-card violet"><b>多来源研究</b><span>用 Deep Research，当作第一稿。</span></div>
+                  <div class="decision-card orange"><b>具体材料</b><span>上传文件或粘贴原文。</span></div>
+                  <div class="decision-card red"><b>精确计算</b><span>运行代码，审查变量和输出。</span></div>
+                  <div class="decision-card blue"><b>编程项目</b><span>用 Cursor / Composer 读写代码库。</span></div>
+                  <div class="decision-card green"><b>重复任务</b><span>封装 custom GPT 或 instruction。</span></div>
+                  <div class="decision-card orange"><b>说看听画</b><span>用语音、图片、视频、播客和生成模型。</span></div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Section 19</span><span>18 / 18</span></footer>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="bottom">
+      <div class="bottom-left">
+        <button class="ghost-button" id="overviewBottom" type="button">目录 / 总览</button>
+        <span class="hint">快捷键：← → 空格 · G 总览 · F 全屏</span>
+      </div>
+      <div class="bottom-right">
+        <button class="nav-button" id="prevBtn" type="button">上一页</button>
+        <div class="counter"><span id="currentNum">01</span> / <span id="totalNum">18</span></div>
+        <button class="nav-button" id="nextBtn" type="button">下一页</button>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    const app = document.getElementById("app");
+    const stage = document.getElementById("stage");
+    const slides = Array.from(document.querySelectorAll(".slide"));
+    const railList = document.getElementById("railList");
+    const railCount = document.getElementById("railCount");
+    const currentNum = document.getElementById("currentNum");
+    const totalNum = document.getElementById("totalNum");
+    const progressFill = document.getElementById("progressFill");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const overviewBtns = [document.getElementById("overviewTop"), document.getElementById("overviewBottom")];
+    const fullscreenBtn = document.getElementById("fullscreenBtn");
+    let current = 0;
+
+    totalNum.textContent = String(slides.length).padStart(2, "0");
+    railCount.textContent = slides.length;
+
+    slides.forEach((slide, index) => {
+      const button = document.createElement("button");
+      button.className = "rail-item";
+      button.type = "button";
+      button.innerHTML = `<span>${String(index + 1).padStart(2, "0")}</span><span>${slide.dataset.title}</span>`;
+      button.addEventListener("click", () => {
+        app.classList.remove("overview");
+        go(index);
+      });
+      railList.appendChild(button);
+
+      slide.addEventListener("click", () => {
+        if (app.classList.contains("overview")) {
+          app.classList.remove("overview");
+          go(index);
+        }
+      });
+    });
+
+    function go(index) {
+      current = Math.max(0, Math.min(slides.length - 1, index));
+      slides.forEach((slide, i) => slide.classList.toggle("is-active", i === current));
+      Array.from(railList.children).forEach((item, i) => item.classList.toggle("is-active", i === current));
+      currentNum.textContent = String(current + 1).padStart(2, "0");
+      progressFill.style.width = `${((current + 1) / slides.length) * 100}%`;
+      prevBtn.disabled = current === 0;
+      nextBtn.disabled = current === slides.length - 1;
+      document.title = `${String(current + 1).padStart(2, "0")} · ${slides[current].dataset.title}`;
+    }
+
+    function toggleOverview() {
+      app.classList.toggle("overview");
+      if (!app.classList.contains("overview")) go(current);
+    }
+
+    prevBtn.addEventListener("click", () => go(current - 1));
+    nextBtn.addEventListener("click", () => go(current + 1));
+    overviewBtns.forEach((button) => button.addEventListener("click", toggleOverview));
+    fullscreenBtn.addEventListener("click", async () => {
+      if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
+      else await document.exitFullscreen();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+      if (event.key === "ArrowRight" || event.key === " " || event.key === "PageDown") {
+        event.preventDefault();
+        if (app.classList.contains("overview")) app.classList.remove("overview");
+        go(current + 1);
+      }
+      if (event.key === "ArrowLeft" || event.key === "PageUp") {
+        event.preventDefault();
+        if (app.classList.contains("overview")) app.classList.remove("overview");
+        go(current - 1);
+      }
+      if (event.key === "Home") go(0);
+      if (event.key === "End") go(slides.length - 1);
+      if (event.key.toLowerCase() === "g") toggleOverview();
+      if (event.key.toLowerCase() === "f") fullscreenBtn.click();
+      if (event.key === "Escape" && app.classList.contains("overview")) {
+        app.classList.remove("overview");
+        go(current);
+      }
+    });
+
+    go(0);
+  </script>
+</body>
+</html>

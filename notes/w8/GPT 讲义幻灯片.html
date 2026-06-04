@@ -1,0 +1,2035 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>手动实现 ChatGPT：从预训练到强化学习</title>
+  <style>
+    :root {
+      --bg: #eef2f5;
+      --paper: #fbfaf6;
+      --paper-2: #f6f8fb;
+      --ink: #101827;
+      --muted: #5f697a;
+      --soft: #dfe5ec;
+      --rule: #cfd7df;
+      --blue: #246bfe;
+      --blue-soft: #eaf2ff;
+      --green: #10a06f;
+      --green-soft: #e9f8ef;
+      --orange: #ee6b22;
+      --orange-soft: #fff0e6;
+      --violet: #7c4dff;
+      --violet-soft: #f2edff;
+      --red: #d83c3c;
+      --red-soft: #fff0f0;
+      --yellow: #f8c241;
+      --radius: 18px;
+      --shadow: 0 20px 70px rgba(16, 24, 39, .14);
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font);
+      background:
+        radial-gradient(circle at 85% 12%, rgba(36, 107, 254, .08), transparent 30%),
+        linear-gradient(180deg, #f8fafc 0%, var(--bg) 100%);
+      overflow: hidden;
+    }
+
+    button {
+      font: inherit;
+      color: inherit;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .app {
+      height: 100vh;
+      display: grid;
+      grid-template-rows: 70px 1fr 96px;
+      background:
+        linear-gradient(90deg, rgba(207, 215, 223, .55) 1px, transparent 1px) 0 0 / 28px 28px,
+        linear-gradient(0deg, rgba(207, 215, 223, .45) 1px, transparent 1px) 0 0 / 28px 28px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      background: rgba(255, 255, 255, .82);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--soft);
+      box-shadow: 0 8px 26px rgba(16, 24, 39, .04);
+      z-index: 5;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      min-width: 0;
+    }
+
+    .mark {
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--rule);
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: #fff;
+      box-shadow: 0 8px 20px rgba(16, 24, 39, .05);
+      font-weight: 900;
+      color: var(--blue);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 21px;
+      line-height: 1;
+      letter-spacing: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ghost-button, .nav-button {
+      min-height: 40px;
+      padding: 0 16px;
+      border-radius: 12px;
+      border: 1px solid var(--rule);
+      background: rgba(255, 255, 255, .82);
+      color: #263142;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 650;
+      transition: transform .18s ease, border-color .18s ease, background .18s ease;
+    }
+
+    .ghost-button:hover, .nav-button:hover {
+      transform: translateY(-1px);
+      border-color: #b9c4d0;
+      background: #fff;
+    }
+
+    .layout {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 240px 1fr;
+    }
+
+    .rail {
+      border-right: 1px solid var(--soft);
+      background: rgba(255, 255, 255, .62);
+      backdrop-filter: blur(18px);
+      padding: 32px 18px 24px 22px;
+      overflow: auto;
+    }
+
+    .rail-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      margin: 0 4px 20px;
+    }
+
+    .rail-list {
+      position: relative;
+      display: grid;
+      gap: 12px;
+    }
+
+    .rail-list::before {
+      content: "";
+      position: absolute;
+      left: 19px;
+      top: 14px;
+      bottom: 14px;
+      width: 1px;
+      background: linear-gradient(180deg, transparent, #aeb8c5 8%, #aeb8c5 92%, transparent);
+    }
+
+    .rail-item {
+      position: relative;
+      display: grid;
+      grid-template-columns: 34px 42px minmax(0, 1fr);
+      align-items: center;
+      min-height: 42px;
+      padding: 0 8px 0 0;
+      border-radius: 13px;
+      text-align: left;
+      color: var(--muted);
+    }
+
+    .rail-item::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      margin-left: 15px;
+      border-radius: 99px;
+      border: 1.5px solid #7d8796;
+      background: #fff;
+      z-index: 1;
+      transition: all .2s ease;
+    }
+
+    .rail-item span:first-child {
+      font-size: 17px;
+      font-weight: 720;
+      letter-spacing: 0;
+    }
+
+    .rail-item span:last-child {
+      font-size: 14px;
+      font-weight: 620;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .rail-item.is-active {
+      background: linear-gradient(90deg, rgba(36, 107, 254, .13), transparent);
+      color: var(--blue);
+    }
+
+    .rail-item.is-active::before {
+      width: 14px;
+      height: 14px;
+      margin-left: 13px;
+      border: 4px solid var(--blue);
+      background: #fff;
+      box-shadow: 0 0 0 6px rgba(36, 107, 254, .12);
+    }
+
+    .stage-shell {
+      min-height: 0;
+      display: grid;
+      place-items: center;
+      padding: 28px 30px;
+      overflow: hidden;
+    }
+
+    .stage {
+      position: relative;
+      width: min(100%, calc((100vh - 206px) * 16 / 9));
+      aspect-ratio: 16 / 9;
+      filter: drop-shadow(var(--shadow));
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      padding: 44px 62px 34px;
+      border: 1px solid rgba(207, 215, 223, .86);
+      border-radius: 22px;
+      background:
+        radial-gradient(circle at 91% 7%, rgba(36, 107, 254, .08), transparent 23%),
+        linear-gradient(90deg, rgba(207, 215, 223, .22) 1px, transparent 1px) 0 0 / 24px 24px,
+        linear-gradient(0deg, rgba(207, 215, 223, .18) 1px, transparent 1px) 0 0 / 24px 24px,
+        var(--paper);
+      opacity: 0;
+      transform: translateX(30px) scale(.985);
+      pointer-events: none;
+      transition: opacity .34s ease, transform .34s ease;
+      overflow: hidden;
+    }
+
+    .slide::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 5% 92%, rgba(16, 160, 111, .06), transparent 22%),
+        linear-gradient(135deg, rgba(255, 255, 255, .65), transparent 42%);
+      pointer-events: none;
+    }
+
+    .slide.is-active {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+      pointer-events: auto;
+    }
+
+    .slide-inner {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 16px;
+    }
+
+    .slide-head {
+      display: grid;
+      gap: 8px;
+      max-width: 860px;
+    }
+
+    .eyebrow {
+      color: var(--orange);
+      font-size: 12px;
+      font-weight: 820;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 28px;
+      height: 5px;
+      border-radius: 10px;
+      background: var(--orange);
+    }
+
+    .slide-title {
+      margin: 0;
+      max-width: 920px;
+      font-size: clamp(30px, 3.0vw, 44px);
+      line-height: 1.12;
+      letter-spacing: 0;
+      font-weight: 850;
+    }
+
+    .slide-subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(16px, 1.28vw, 20px);
+      line-height: 1.42;
+      max-width: 900px;
+      font-weight: 480;
+    }
+
+    .slide-body {
+      min-height: 0;
+      display: grid;
+      align-items: center;
+    }
+
+    .slide-foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #7a8493;
+      font-size: 11px;
+      font-weight: 650;
+      border-top: 1px solid rgba(207, 215, 223, .72);
+      padding-top: 12px;
+    }
+
+    .blue { --accent: var(--blue); --accent-soft: var(--blue-soft); }
+    .green { --accent: var(--green); --accent-soft: var(--green-soft); }
+    .orange { --accent: var(--orange); --accent-soft: var(--orange-soft); }
+    .violet { --accent: var(--violet); --accent-soft: var(--violet-soft); }
+    .red { --accent: var(--red); --accent-soft: var(--red-soft); }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
+      gap: 28px;
+      align-items: center;
+    }
+
+    .node {
+      min-height: 104px;
+      border: 1px solid color-mix(in srgb, var(--accent) 62%, #fff);
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(255,255,255,.95), var(--accent-soft));
+      padding: 18px 20px 16px;
+      box-shadow: 0 16px 36px rgba(16, 24, 39, .07);
+      position: relative;
+    }
+
+    .node::after {
+      content: "";
+      position: absolute;
+      right: -24px;
+      top: 50%;
+      width: 20px;
+      height: 1.5px;
+      background: #8691a0;
+    }
+
+    .node:last-child::after { display: none; }
+
+    .node strong {
+      display: block;
+      color: var(--accent);
+      font-size: 22px;
+      line-height: 1.15;
+      margin-bottom: 10px;
+    }
+
+    .node small {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+      font-weight: 560;
+    }
+
+    .hero-flow {
+      grid-template-columns: 1.05fr 1.2fr 1fr .95fr;
+      align-items: stretch;
+    }
+
+    .prompt-card {
+      min-height: 154px;
+      padding: 22px;
+      border: 1px solid var(--rule);
+      border-radius: 20px;
+      background: #fff;
+      box-shadow: 0 16px 36px rgba(16, 24, 39, .06);
+    }
+
+    .prompt-card .bubble {
+      width: 34px;
+      height: 34px;
+      border-radius: 99px;
+      display: grid;
+      place-items: center;
+      background: var(--green-soft);
+      color: var(--green);
+      font-weight: 900;
+      margin-bottom: 18px;
+    }
+
+    .prompt-card p {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.38;
+      font-weight: 700;
+    }
+
+    .token-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 20px;
+      border-radius: 18px;
+      border: 1px dashed rgba(16, 160, 111, .6);
+      background: rgba(233, 248, 239, .74);
+      align-content: center;
+      min-height: 104px;
+    }
+
+    .token {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 34px;
+      padding: 0 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(16, 160, 111, .22);
+      background: #fff;
+      color: #225c45;
+      font-size: 15px;
+      font-weight: 760;
+      box-shadow: 0 8px 16px rgba(16, 160, 111, .08);
+    }
+
+    .network, .prob-card, .answer-card {
+      border-radius: 22px;
+      min-height: 154px;
+      background: #fff;
+      border: 1px solid var(--rule);
+      box-shadow: 0 16px 36px rgba(16, 24, 39, .06);
+      padding: 20px;
+    }
+
+    .network {
+      display: grid;
+      place-items: center;
+      border-color: rgba(36, 107, 254, .45);
+      background:
+        radial-gradient(circle, rgba(36, 107, 254, .96) 0 4px, transparent 5px) 36px 36px / 44px 44px,
+        linear-gradient(180deg, #fff, var(--blue-soft));
+    }
+
+    .network span {
+      display: inline-flex;
+      width: 72px;
+      height: 72px;
+      border-radius: 24px;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+      border: 1px solid rgba(36, 107, 254, .35);
+      color: var(--blue);
+      font-weight: 900;
+      box-shadow: 0 18px 38px rgba(36, 107, 254, .16);
+    }
+
+    .prob-row {
+      display: grid;
+      grid-template-columns: 54px 1fr 42px;
+      align-items: center;
+      gap: 10px;
+      margin: 9px 0;
+      color: #1d2a3b;
+      font-weight: 700;
+    }
+
+    .bar-track {
+      height: 10px;
+      border-radius: 20px;
+      background: #e7edf3;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: var(--w);
+      background: var(--accent);
+      border-radius: 20px;
+    }
+
+    .answer-card {
+      color: var(--orange);
+      border-color: rgba(238, 107, 34, .55);
+      background: linear-gradient(180deg, #fff, var(--orange-soft));
+    }
+
+    .answer-card p {
+      margin: 0;
+      font-size: 21px;
+      line-height: 1.45;
+      font-weight: 780;
+    }
+
+    .big-map {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 28px;
+      align-items: stretch;
+    }
+
+    .stage-card {
+      padding: 24px;
+      border-radius: 24px;
+      background: #fff;
+      border: 1px solid color-mix(in srgb, var(--accent) 45%, #dfe5ec);
+      box-shadow: 0 18px 48px rgba(16, 24, 39, .08);
+    }
+
+    .stage-card .tag {
+      display: inline-flex;
+      padding: 6px 12px;
+      border-radius: 999px;
+      color: var(--accent);
+      background: var(--accent-soft);
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 20px;
+    }
+
+    .stage-card h3 {
+      margin: 0 0 10px;
+      font-size: 36px;
+      line-height: 1;
+    }
+
+    .stage-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.55;
+      font-weight: 520;
+    }
+
+    .stage-card .mini-rule {
+      width: 90px;
+      height: 4px;
+      border-radius: 10px;
+      background: var(--accent);
+      margin: 20px 0 12px;
+    }
+
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .pipe-step {
+      min-height: 132px;
+      padding: 18px 16px;
+      border-radius: 20px;
+      background: #fff;
+      border: 1px solid var(--rule);
+      position: relative;
+      box-shadow: 0 14px 32px rgba(16, 24, 39, .055);
+    }
+
+    .pipe-step::after {
+      content: "";
+      position: absolute;
+      right: -15px;
+      top: 50%;
+      width: 12px;
+      height: 2px;
+      background: #9aa4b2;
+    }
+
+    .pipe-step:last-child::after { display: none; }
+
+    .pipe-step b {
+      color: var(--accent);
+      display: block;
+      font-size: 17px;
+      margin-bottom: 12px;
+    }
+
+    .pipe-step span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+      font-weight: 560;
+    }
+
+    .metric-row {
+      margin-top: 24px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .metric {
+      border-radius: 18px;
+      border: 1px solid var(--rule);
+      background: rgba(255,255,255,.75);
+      padding: 16px;
+      text-align: center;
+    }
+
+    .metric b {
+      color: var(--accent);
+      font-size: 32px;
+      line-height: 1;
+      display: block;
+      margin-bottom: 9px;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr .9fr;
+      gap: 30px;
+      align-items: center;
+    }
+
+    .token-board {
+      border-radius: 24px;
+      border: 1px solid var(--rule);
+      background: rgba(255,255,255,.82);
+      padding: 24px;
+      box-shadow: 0 18px 46px rgba(16, 24, 39, .07);
+    }
+
+    .byte-chain {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 10px 0 18px;
+    }
+
+    .byte {
+      min-width: 42px;
+      height: 34px;
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      background: var(--paper-2);
+      border: 1px solid var(--rule);
+      color: #526070;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .merge-line {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 14px;
+      color: var(--muted);
+      margin: 16px 0;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .merge-line::before, .merge-line::after {
+      content: "";
+      height: 1px;
+      background: var(--rule);
+    }
+
+    .callout {
+      padding: 18px;
+      border-radius: 20px;
+      background: var(--accent-soft);
+      border: 1px solid color-mix(in srgb, var(--accent) 42%, #fff);
+      color: var(--accent);
+      font-size: 22px;
+      font-weight: 850;
+      line-height: 1.35;
+    }
+
+    .callout small {
+      display: block;
+      color: var(--muted);
+      font-size: 15px;
+      margin-top: 10px;
+      line-height: 1.5;
+      font-weight: 600;
+    }
+
+    .objective {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .context-window {
+      border-radius: 24px;
+      background: #fff;
+      border: 1px solid var(--rule);
+      padding: 26px;
+      box-shadow: 0 18px 46px rgba(16,24,39,.07);
+    }
+
+    .context-tokens {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 22px;
+    }
+
+    .next-token {
+      width: 90px;
+      height: 90px;
+      border-radius: 28px;
+      display: grid;
+      place-items: center;
+      background: var(--orange-soft);
+      border: 1px solid rgba(238,107,34,.45);
+      color: var(--orange);
+      font-size: 52px;
+      font-weight: 900;
+    }
+
+    .chart {
+      display: flex;
+      gap: 16px;
+      align-items: end;
+      justify-content: center;
+      height: 210px;
+      padding: 24px 24px 14px;
+      border-radius: 24px;
+      background: #fff;
+      border: 1px solid var(--rule);
+      box-shadow: 0 18px 46px rgba(16,24,39,.07);
+    }
+
+    .chart .col {
+      width: 34px;
+      height: var(--h);
+      border-radius: 10px 10px 4px 4px;
+      background: var(--accent);
+      opacity: .9;
+    }
+
+    .chart .col.hot {
+      background: var(--green);
+      box-shadow: 0 0 0 8px rgba(16,160,111,.08);
+    }
+
+    .architecture {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 18px;
+      align-items: center;
+    }
+
+    .arch-block {
+      min-height: 104px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      border-radius: 20px;
+      padding: 18px;
+      background: #fff;
+      border: 1px solid color-mix(in srgb, var(--accent) 45%, #dfe5ec);
+      color: var(--accent);
+      font-size: 18px;
+      font-weight: 820;
+      box-shadow: 0 14px 34px rgba(16,24,39,.06);
+      position: relative;
+    }
+
+    .arch-block::after {
+      content: "";
+      position: absolute;
+      right: -16px;
+      top: 50%;
+      width: 14px;
+      height: 2px;
+      background: #8a94a3;
+    }
+
+    .arch-block:last-child::after { display: none; }
+
+    .pill-row {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 28px;
+    }
+
+    .pill {
+      min-height: 38px;
+      padding: 0 16px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      border: 1px solid color-mix(in srgb, var(--accent) 40%, #fff);
+      color: var(--accent);
+      display: inline-flex;
+      align-items: center;
+      font-size: 14px;
+      font-weight: 780;
+    }
+
+    .loop {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      align-items: center;
+      margin-bottom: 42px;
+    }
+
+    .loop .node { min-height: 94px; }
+
+    .loop-note {
+      width: min(680px, 90%);
+      min-height: 72px;
+      margin: 0 auto;
+      border-radius: 999px;
+      background: var(--violet-soft);
+      border: 1px solid rgba(124,77,255,.35);
+      color: var(--violet);
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      font-weight: 850;
+    }
+
+    .compute {
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: 30px;
+      align-items: center;
+    }
+
+    .score-card {
+      border-radius: 26px;
+      background: #fff;
+      border: 1px solid var(--rule);
+      padding: 24px;
+      box-shadow: 0 18px 46px rgba(16,24,39,.07);
+    }
+
+    .score-card h3 {
+      margin: 0 0 18px;
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .score-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .score {
+      border-radius: 18px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      padding: 18px 10px;
+      text-align: center;
+      font-weight: 820;
+    }
+
+    .score b {
+      display: block;
+      font-size: 27px;
+      margin-bottom: 6px;
+    }
+
+    .gpu-wall {
+      height: 228px;
+      border-radius: 26px;
+      border: 1px solid var(--rule);
+      background: #fff;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 10px;
+      align-items: end;
+      box-shadow: 0 18px 46px rgba(16,24,39,.07);
+    }
+
+    .gpu {
+      height: var(--h);
+      border-radius: 13px;
+      background: linear-gradient(180deg, var(--blue), #7ab4ff);
+      box-shadow: 0 12px 24px rgba(36,107,254,.16);
+    }
+
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+    }
+
+    .compare-card {
+      min-height: 246px;
+      padding: 26px;
+      border-radius: 26px;
+      background: #fff;
+      border: 1px solid var(--rule);
+      box-shadow: 0 18px 46px rgba(16,24,39,.07);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .compare-card::after {
+      content: "";
+      position: absolute;
+      right: -36px;
+      bottom: -36px;
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      background: var(--accent-soft);
+    }
+
+    .compare-card h3 {
+      margin: 0 0 18px;
+      font-size: 31px;
+      color: var(--accent);
+    }
+
+    .compare-card p {
+      margin: 0;
+      max-width: 340px;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.55;
+      font-weight: 550;
+      position: relative;
+      z-index: 1;
+    }
+
+    .protocol {
+      display: grid;
+      grid-template-columns: 1fr 1.1fr;
+      gap: 36px;
+      align-items: center;
+    }
+
+    .message-stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    .message {
+      display: grid;
+      grid-template-columns: 112px 1fr;
+      gap: 14px;
+      align-items: center;
+      padding: 14px;
+      border-radius: 18px;
+      border: 1px solid var(--rule);
+      background: #fff;
+      box-shadow: 0 12px 28px rgba(16,24,39,.055);
+    }
+
+    .role {
+      height: 38px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 850;
+      font-size: 14px;
+    }
+
+    .message p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+      font-weight: 620;
+    }
+
+    .values {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .value {
+      min-height: 136px;
+      border-radius: 24px;
+      padding: 20px 16px;
+      text-align: center;
+      border: 1px solid color-mix(in srgb, var(--accent) 42%, #dfe5ec);
+      background: #fff;
+      box-shadow: 0 14px 34px rgba(16,24,39,.06);
+    }
+
+    .value b {
+      display: block;
+      color: var(--accent);
+      font-size: 21px;
+      margin-bottom: 14px;
+    }
+
+    .value span {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+      font-weight: 600;
+    }
+
+    .hallucination {
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: 34px;
+      align-items: center;
+    }
+
+    .wrong-list {
+      display: grid;
+      gap: 16px;
+    }
+
+    .wrong {
+      min-height: 62px;
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid var(--rule);
+      display: flex;
+      align-items: center;
+      padding: 0 22px;
+      box-shadow: 0 12px 28px rgba(16,24,39,.055);
+      color: var(--accent);
+      font-size: 19px;
+      font-weight: 820;
+    }
+
+    .known-map {
+      display: grid;
+      grid-template-columns: 1fr 120px 1fr;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .decision {
+      min-height: 170px;
+      border-radius: 24px;
+      padding: 26px;
+      display: grid;
+      align-content: center;
+      gap: 10px;
+      background: #fff;
+      border: 1px solid var(--rule);
+      box-shadow: 0 18px 46px rgba(16,24,39,.07);
+    }
+
+    .decision b {
+      color: var(--accent);
+      font-size: 24px;
+    }
+
+    .decision span {
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.5;
+      font-weight: 560;
+    }
+
+    .tools {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .tool-card {
+      min-height: 230px;
+      border-radius: 26px;
+      background: #fff;
+      border: 1px solid color-mix(in srgb, var(--accent) 42%, #dfe5ec);
+      padding: 30px;
+      box-shadow: 0 18px 46px rgba(16,24,39,.07);
+    }
+
+    .tool-card h3 {
+      margin: 0 0 16px;
+      color: var(--accent);
+      font-size: 30px;
+    }
+
+    .tool-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.55;
+      font-weight: 550;
+    }
+
+    .identity-map, .reason-map, .rl-map {
+      display: grid;
+      gap: 30px;
+    }
+
+    .rl-map { gap: 18px; }
+
+    .rl-cases .callout {
+      min-height: 104px;
+      padding: 16px;
+      font-size: 20px;
+    }
+
+    .identity-row, .reason-row, .rl-row {
+      display: grid;
+      grid-template-columns: repeat(var(--cols, 3), 1fr);
+      gap: 20px;
+      align-items: center;
+    }
+
+    .mini-node {
+      min-height: 82px;
+      border-radius: 18px;
+      border: 1px solid color-mix(in srgb, var(--accent) 42%, #dfe5ec);
+      background: #fff;
+      color: var(--accent);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 14px;
+      font-size: 19px;
+      font-weight: 820;
+      box-shadow: 0 14px 34px rgba(16,24,39,.06);
+    }
+
+    .path-cloud {
+      height: 172px;
+      border-radius: 26px;
+      border: 1px solid var(--rule);
+      background: #fff;
+      display: grid;
+      grid-template-columns: 160px 1fr 190px;
+      align-items: center;
+      gap: 20px;
+      padding: 24px;
+      box-shadow: 0 18px 46px rgba(16,24,39,.07);
+      overflow: hidden;
+    }
+
+    .paths {
+      position: relative;
+      height: 124px;
+      background:
+        linear-gradient(90deg, transparent 0 22%, rgba(207,215,223,.8) 22% 22.5%, transparent 22.5% 48%, rgba(207,215,223,.8) 48% 48.5%, transparent 48.5% 74%, rgba(207,215,223,.8) 74% 74.5%, transparent 74.5%);
+    }
+
+    .paths .path {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: var(--y);
+      height: 2px;
+      background: color-mix(in srgb, var(--accent) 56%, #cfd7df);
+      transform: rotate(var(--r));
+      transform-origin: left center;
+    }
+
+    .paths .dot {
+      position: absolute;
+      right: 0;
+      top: calc(var(--y) - 5px);
+      width: 11px;
+      height: 11px;
+      border-radius: 99px;
+      background: var(--accent);
+    }
+
+    .final-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 26px;
+    }
+
+    .future-grid, .checklist {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .future, .check {
+      min-height: 68px;
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid color-mix(in srgb, var(--accent) 42%, #dfe5ec);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      font-size: 18px;
+      font-weight: 820;
+      box-shadow: 0 12px 28px rgba(16,24,39,.055);
+    }
+
+    .bottom {
+      display: grid;
+      grid-template-columns: 1fr minmax(340px, 520px) 1fr;
+      align-items: center;
+      gap: 24px;
+      padding: 16px 28px;
+      background: rgba(255, 255, 255, .86);
+      backdrop-filter: blur(18px);
+      border-top: 1px solid var(--soft);
+      z-index: 5;
+    }
+
+    .bottom-left, .bottom-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .bottom-right { justify-content: end; }
+
+    .nav-button.primary {
+      min-width: 120px;
+      background: var(--blue);
+      color: #fff;
+      border-color: var(--blue);
+      box-shadow: 0 12px 24px rgba(36, 107, 254, .22);
+    }
+
+    .progress {
+      display: grid;
+      grid-template-columns: 56px 1fr 56px;
+      align-items: center;
+      gap: 14px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .progress b {
+      color: var(--ink);
+      font-size: 18px;
+      text-align: center;
+    }
+
+    .progress-track {
+      height: 8px;
+      border-radius: 99px;
+      background: #dde4ec;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--blue), #69a7ff);
+      transition: width .24s ease;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .overview {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      background: rgba(238, 242, 245, .92);
+      backdrop-filter: blur(18px);
+      padding: 64px;
+      overflow: auto;
+    }
+
+    .overview.is-open { display: block; }
+
+    .overview-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 26px;
+    }
+
+    .overview-head h2 {
+      margin: 0;
+      font-size: 36px;
+    }
+
+    .thumb-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 18px;
+    }
+
+    .thumb {
+      min-height: 154px;
+      border-radius: 18px;
+      border: 1px solid var(--rule);
+      background: var(--paper);
+      padding: 18px;
+      text-align: left;
+      box-shadow: 0 12px 30px rgba(16,24,39,.08);
+      display: grid;
+      align-content: space-between;
+      transition: transform .18s ease, border-color .18s ease;
+    }
+
+    .thumb:hover {
+      transform: translateY(-2px);
+      border-color: #aeb8c5;
+    }
+
+    .thumb b {
+      color: var(--blue);
+      font-size: 14px;
+    }
+
+    .thumb span {
+      display: block;
+      color: var(--ink);
+      font-size: 20px;
+      line-height: 1.25;
+      font-weight: 820;
+      margin-top: 12px;
+    }
+
+    .thumb small {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    @media (max-width: 980px) {
+      body { overflow: auto; }
+      .app {
+        min-height: 100vh;
+        height: auto;
+        grid-template-rows: auto auto auto;
+      }
+      .topbar {
+        position: sticky;
+        top: 0;
+        padding: 14px 16px;
+      }
+      .brand h1 { font-size: 16px; }
+      .layout { grid-template-columns: 1fr; }
+      .rail { display: none; }
+      .stage-shell {
+        padding: 14px;
+        min-height: 68vh;
+      }
+      .stage {
+        width: 100%;
+        min-height: 560px;
+        aspect-ratio: auto;
+      }
+      .slide {
+        padding: 32px 24px 28px;
+        border-radius: 18px;
+        overflow: auto;
+      }
+      .slide-inner {
+        height: auto;
+        min-height: 100%;
+      }
+      .slide-title { font-size: 30px; }
+      .flow, .hero-flow, .big-map, .pipeline, .split, .objective, .architecture,
+      .loop, .compute, .compare, .protocol, .hallucination, .known-map,
+      .tools, .identity-row, .reason-row, .rl-row, .final-grid {
+        grid-template-columns: 1fr;
+      }
+      .node::after, .pipe-step::after, .arch-block::after { display: none; }
+      .bottom {
+        position: sticky;
+        bottom: 0;
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .bottom-left, .bottom-right {
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .hint { display: none; }
+      .overview { padding: 24px; }
+    }
+
+    @media print {
+      body { overflow: visible; background: #fff; }
+      .topbar, .rail, .bottom, .overview { display: none !important; }
+      .app, .layout, .stage-shell { display: block; height: auto; background: #fff; padding: 0; }
+      .stage { width: 100%; filter: none; aspect-ratio: auto; }
+      .slide {
+        position: relative;
+        opacity: 1 !important;
+        transform: none !important;
+        page-break-after: always;
+        width: 100%;
+        height: 100vh;
+        border: 0;
+        border-radius: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark">GPT</div>
+        <h1>手动实现 ChatGPT：从预训练到强化学习</h1>
+      </div>
+      <div class="top-actions">
+        <button class="ghost-button" id="overviewTop" type="button">总览</button>
+        <button class="ghost-button" id="fullscreenButton" type="button">全屏</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside class="rail" aria-label="幻灯片目录">
+        <div class="rail-title"><span>LECTURE MAP</span><span id="railCount">16</span></div>
+        <div class="rail-list" id="railList"></div>
+      </aside>
+
+      <section class="stage-shell" aria-live="polite">
+        <div class="stage" id="stage">
+          <article class="slide is-active" data-title="目标与路线" data-section="01">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Goal</div>
+                <h2 class="slide-title">从一段文本，到智能的 Assistant 行为</h2>
+                <p class="slide-subtitle">这门课将 ChatGPT 拆成一条可实现的工程链路。</p>
+              </header>
+              <div class="slide-body">
+                <div class="flow hero-flow">
+                  <div class="prompt-card">
+                    <div class="bubble">?</div>
+                    <p>帮我解释：ChatGPT 背后是什么？</p>
+                  </div>
+                  <div class="token-strip">
+                    <span class="token">文本</span><span class="token">→</span><span class="token">token</span><span class="token">→</span><span class="token">ID</span><span class="token">...</span>
+                  </div>
+                  <div class="network"><span>NN</span></div>
+                  <div class="answer-card"><p>预测、采样、追加，直到生成完整回答。</p></div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Section 1</span><span>01 / 17</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="三阶段训练" data-section="02">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Training Arc</div>
+                <h2 class="slide-title">三个阶段，把续写器塑造成助手</h2>
+                <p class="slide-subtitle">预训练学语言和世界，SFT 学对话行为，RL 学自己的解题策略。</p>
+              </header>
+              <div class="slide-body">
+                <div class="big-map">
+                  <div class="stage-card blue">
+                    <span class="tag">Pre-training</span>
+                    <h3>读材料</h3>
+                    <p>海量互联网文本，目标仍然是预测下一个 token。</p>
+                    <div class="mini-rule"></div>
+                    <p>得到 base model。</p>
+                  </div>
+                  <div class="stage-card green">
+                    <span class="tag">SFT</span>
+                    <h3>看例题</h3>
+                    <p>人类和模型合成的对话示范，让模型模仿理想助手。</p>
+                    <div class="mini-rule"></div>
+                    <p>得到 instruct model。</p>
+                  </div>
+                  <div class="stage-card orange">
+                    <span class="tag">RL / RLHF</span>
+                    <h3>做练习</h3>
+                    <p>从尝试中强化成功路径，偏好任务用奖励模型近似人类判断。</p>
+                    <div class="mini-rule"></div>
+                    <p>得到更强策略。</p>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Sections 1, 21</span><span>02 / 17</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="数据织物" data-section="03">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Data</div>
+                <h2 class="slide-title">预训练不是吞下互联网，而是筛出文本分布</h2>
+                <p class="slide-subtitle">数量、质量、多样性共同决定模型能学到什么。</p>
+              </header>
+              <div class="slide-body">
+                <div>
+                  <div class="pipeline">
+                    <div class="pipe-step blue"><b>Common Crawl</b><span>从网页链接扩展，得到粗糙原始数据。</span></div>
+                    <div class="pipe-step green"><b>URL 过滤</b><span>去掉垃圾站、恶意站、成人内容等来源。</span></div>
+                    <div class="pipe-step orange"><b>正文抽取</b><span>HTML 里只保留正文，剔除菜单、脚本和页脚。</span></div>
+                    <div class="pipe-step violet"><b>语言 / 质量</b><span>用分类器和质量规则控制训练分布。</span></div>
+                    <div class="pipe-step red"><b>去重 + PII</b><span>减少重复样本，移除敏感个人信息。</span></div>
+                  </div>
+                  <div class="metric-row">
+                    <div class="metric blue"><b>44TB</b><span>FineWeb 量级</span></div>
+                    <div class="metric green"><b>15T</b><span>约 token 数</span></div>
+                    <div class="metric orange"><b>65%+</b><span>示例英文阈值</span></div>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Section 2</span><span>03 / 17</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="文本到 Token" data-section="04">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Tokenization</div>
+                <h2 class="slide-title">模型看到的是 token，不是字符</h2>
+                <p class="slide-subtitle">BPE 用更大的词表换更短的序列，也制造了很多直觉错位。</p>
+              </header>
+              <div class="slide-body">
+                <div class="split">
+                  <div class="token-board">
+                    <strong>hello world</strong>
+                    <div class="byte-chain">
+                      <span class="byte">104</span><span class="byte">101</span><span class="byte">108</span><span class="byte">108</span><span class="byte">111</span><span class="byte">32</span><span class="byte">119</span><span class="byte">...</span>
+                    </div>
+                    <div class="merge-line">BPE 合并常见片段</div>
+                    <div class="token-strip">
+                      <span class="token">hello</span><span class="token"> world</span><span class="token">ID: 1917</span>
+                    </div>
+                  </div>
+                  <div class="callout orange">
+                    strawberry 里有几个 r？
+                    <small>人眼看到字符；模型要从 token 表示里间接推断，计数和拼写会变脆。</small>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Sections 3, 16</span><span>04 / 17</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="下一个 Token" data-section="05">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Objective</div>
+                <h2 class="slide-title">训练目标很朴素：把正确 token 概率推高</h2>
+                <p class="slide-subtitle">窗口、batch、GPU 并行，服务的是同一个 next-token loss。</p>
+              </header>
+              <div class="slide-body">
+                <div class="objective">
+                  <div class="context-window blue">
+                    <div class="context-tokens">
+                      <span class="token">t-4</span><span class="token">t-3</span><span class="token">t-2</span><span class="token">t-1</span><div class="next-token">?</div>
+                    </div>
+                    <div class="callout blue">上下文窗口 → 预测第 t+1 个 token<small>参数更新让真实 token 的概率变高，loss 变低。</small></div>
+                  </div>
+                  <div>
+                    <div class="chart green">
+                      <div class="col" style="--h:92px"></div>
+                      <div class="col" style="--h:132px"></div>
+                      <div class="col hot" style="--h:180px"></div>
+                      <div class="col" style="--h:104px"></div>
+                      <div class="col" style="--h:62px"></div>
+                    </div>
+                    <div class="pill-row green"><span class="pill">100,277 维概率分布</span><span class="pill">真实 token</span></div>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Section 4</span><span>05 / 17</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="Transformer" data-section="06">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Architecture</div>
+                <h2 class="slide-title">Transformer 是一个巨大的可训练数学函数</h2>
+                <p class="slide-subtitle">它不是运行时的自我；“记忆”主要压在参数里。</p>
+              </header>
+              <div class="slide-body">
+                <div>
+                  <div class="architecture">
+                    <div class="arch-block blue">Token ID</div>
+                    <div class="arch-block green">Embedding</div>
+                    <div class="arch-block orange">Attention</div>
+                    <div class="arch-block violet">MLP</div>
+                    <div class="arch-block blue">Logits</div>
+                  </div>
+                  <div class="pill-row orange">
+                    <span class="pill">LayerNorm</span><span class="pill">矩阵乘法</span><span class="pill">Softmax</span><span class="pill">并行计算</span>
+                  </div>
+                  <div class="pill-row blue">
+                    <span class="pill">无状态前向计算</span><span class="pill">参数承载模糊记忆</span>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Section 5</span><span>06 / 17</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="推理循环" data-section="07">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Inference</div>
+                <h2 class="slide-title">推理时，它只是循环补全 token</h2>
+                <p class="slide-subtitle">随机采样让同一个前缀可以得到不同但合理的回答。</p>
+              </header>
+              <div class="slide-body">
+                <div>
+                  <div class="loop">
+                    <div class="node blue"><strong>前缀</strong><small>用户输入和历史上下文</small></div>
+                    <div class="node green"><strong>概率</strong><small>输出下一个 token 分布</small></div>
+                    <div class="node orange"><strong>采样</strong><small>从分布中选一个 token</small></div>
+                    <div class="node violet"><strong>追加</strong><small>新 token 回到上下文</small></div>
+                  </div>
+                  <div class="loop-note">重复，直到生成结束标记</div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Section 6</span><span>07 / 17</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="GPT-2 与算力" data-section="08">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Scale</div>
+                <h2 class="slide-title">GPT-2 是现代大模型栈的早期样本</h2>
+                <p class="slide-subtitle">规模变大后，本质工作仍是更快处理 token、更快更新参数。</p>
+              </header>
+              <div class="slide-body">
+                <div class="compute">
+                  <div class="score-card blue">
+                    <h3>GPT-2 · 2019</h3>
+                    <div class="score-grid">
+                      <div class="score"><b>1.5B</b>参数</div>
+                      <div class="score"><b>1024</b>上下文</div>
+                      <div class="score"><b>100B</b>token</div>
+                    </div>
+                    <div class="pill-row blue"><span class="pill">训练日志看 loss</span><span class="pill">生成从乱码到自然语言</span></div>
+                  </div>
+                  <div class="gpu-wall" aria-label="GPU wall">
+                    <div class="gpu" style="--h:108px"></div><div class="gpu" style="--h:156px"></div><div class="gpu" style="--h:182px"></div><div class="gpu" style="--h:142px"></div><div class="gpu" style="--h:196px"></div><div class="gpu" style="--h:168px"></div><div class="gpu" style="--h:132px"></div><div class="gpu" style="--h:184px"></div>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Sections 7-8</span><span>08 / 17</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="Base 与 Instruct" data-section="09">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Base Model</div>
+                <h2 class="slide-title">基础模型不是助手，而是互联网文档模拟器</h2>
+                <p class="slide-subtitle">它会续写“看起来像训练文本”的序列；指令能力来自后训练。</p>
+              </header>
+              <div class="slide-body">
+                <div class="compare">
+                  <div class="compare-card blue">
+                    <h3>Base model</h3>
+                    <p>What is 2 + 2? 可能回答，也可能转向网页、题库或下一段文档。</p>
+                    <div class="pill-row blue"><span class="pill">续写器</span><span class="pill">有损压缩</span><span class="pill">few-shot</span></div>
+                  </div>
+                  <div class="compare-card green">
+                    <h3>Instruct model</h3>
+                    <p>在对话协议里生成助手回复：更像“理想回答”的神经网络模拟。</p>
+                    <div class="pill-row green"><span class="pill">对话格式</span><span class="pill">拒答</span><span class="pill">帮助性</span></div>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Section 9</span><span>09 / 17</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="SFT 与人格" data-section="10">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">SFT</div>
+                <h2 class="slide-title">SFT 用示例“编程”助手人格</h2>
+                <p class="slide-subtitle">结构化对话最终仍会被编码成一维 token 序列。</p>
+              </header>
+              <div class="slide-body">
+                <div class="protocol">
+                  <div class="message-stack">
+                    <div class="message blue"><div class="role">system</div><p>身份、规则、知识截止日期</p></div>
+                    <div class="message green"><div class="role">user</div><p>What is 2 + 2?</p></div>
+                    <div class="message orange"><div class="role">assistant</div><p>2 + 2 = 4.</p></div>
+                  </div>
+                  <div class="values">
+                    <div class="value blue"><b>Helpful</b><span>回答具体，有用，不绕开问题。</span></div>
+                    <div class="value green"><b>Truthful</b><span>事实尽量准确，知道不确定。</span></div>
+                    <div class="value orange"><b>Harmless</b><span>危险请求要拒绝或转向安全帮助。</span></div>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Sections 10-11</span><span>10 / 17</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="幻觉" data-section="11">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Hallucination</div>
+                <h2 class="slide-title">幻觉是“自信回答格式”的副作用</h2>
+                <p class="slide-subtitle">模型不知道时，仍会模仿“谁是 X”的答案形态。</p>
+              </header>
+              <div class="slide-body">
+                <div class="hallucination">
+                  <div class="wrong-list orange">
+                    <div class="wrong">Orson Kovats：科幻作家？</div>
+                    <div class="wrong">Orson Kovats：电视剧角色？</div>
+                    <div class="wrong">Orson Kovats：棒球运动员？</div>
+                  </div>
+                  <div class="known-map">
+                    <div class="decision red"><b>多次回答不稳定</b><span>说明模型没有可靠记忆。</span></div>
+                    <div class="mini-node orange">→</div>
+                    <div class="decision green"><b>训练说“不知道”</b><span>把内部不确定性接到表达上。</span></div>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Section 12</span><span>11 / 17</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="工具使用" data-section="12">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Tools</div>
+                <h2 class="slide-title">工具把模糊记忆变成工作记忆</h2>
+                <p class="slide-subtitle">上下文窗口里的材料比参数里的模糊回忆可靠得多。</p>
+              </header>
+              <div class="slide-body">
+                <div class="tools">
+                  <div class="tool-card blue"><h3>搜索</h3><p>事实题先把新资料放入上下文，再让模型回答。</p></div>
+                  <div class="tool-card green"><h3>代码</h3><p>计数、算术、字符串处理交给可验证工具。</p></div>
+                  <div class="tool-card orange"><h3>原文</h3><p>总结材料时，把材料本身放进工作记忆。</p></div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Section 13</span><span>12 / 17</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="自我知识" data-section="13">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Identity</div>
+                <h2 class="slide-title">模型的“自我知识”是附加出来的设定</h2>
+                <p class="slide-subtitle">每次请求都是一次前向计算，不是持续存在的人格。</p>
+              </header>
+              <div class="slide-body">
+                <div class="identity-map">
+                  <div class="identity-row" style="--cols:3">
+                    <div class="mini-node violet">系统消息</div>
+                    <div class="mini-node blue">对话上下文</div>
+                    <div class="mini-node green">身份回答</div>
+                  </div>
+                  <div class="identity-row" style="--cols:3">
+                    <div class="callout blue">每次请求重新计算<small>读上下文、算 token、结束。</small></div>
+                    <div class="callout red">没有跨对话持续自我<small>除非系统另有记忆机制。</small></div>
+                    <div class="callout orange">身份来自训练和提示<small>不是模型自发知道自己是谁。</small></div>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Section 14</span><span>13 / 17</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="用 Token 思考" data-section="14">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Reasoning</div>
+                <h2 class="slide-title">模型需要 token 来思考，也会在小事上翻车</h2>
+                <p class="slide-subtitle">一步一步不是装样子，中间结果会进入上下文帮助后续预测。</p>
+              </header>
+              <div class="slide-body">
+                <div class="reason-map">
+                  <div class="reason-row" style="--cols:4">
+                    <div class="mini-node red">直接答：3</div>
+                    <div class="mini-node blue">橙子 $4</div>
+                    <div class="mini-node green">苹果 $9</div>
+                    <div class="mini-node orange">每个 $3</div>
+                  </div>
+                  <div class="reason-row" style="--cols:4">
+                    <div class="callout blue">计数<small>点号、字母数容易错。</small></div>
+                    <div class="callout green">拼写<small>token 不等于字符。</small></div>
+                    <div class="callout orange">小数比较<small>语境模式可能干扰。</small></div>
+                    <div class="callout violet">用代码<small>精确操作交给工具。</small></div>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Sections 15-16</span><span>14 / 17</span></footer>
+            </div>
+          </article>
+
+      <article class="slide" data-title="强化学习" data-section="15">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">RL</div>
+                <h2 class="slide-title">RL 让模型自己练习，强化成功路径</h2>
+                <p class="slide-subtitle">成功路径来自模型采样，不只是人类专家解法的模仿。</p>
+              </header>
+              <div class="slide-body">
+                <div class="rl-map">
+                  <div class="path-cloud">
+                    <div class="mini-node blue">Prompt</div>
+                    <div class="paths">
+                      <i class="path" style="--y:28px;--r:-7deg;--accent:var(--red)"></i><i class="dot" style="--y:28px;--accent:var(--red)"></i>
+                      <i class="path" style="--y:62px;--r:4deg;--accent:var(--green)"></i><i class="dot" style="--y:62px;--accent:var(--green)"></i>
+                      <i class="path" style="--y:96px;--r:0deg;--accent:var(--green)"></i><i class="dot" style="--y:96px;--accent:var(--green)"></i>
+                      <i class="path" style="--y:132px;--r:-4deg;--accent:var(--red)"></i><i class="dot" style="--y:132px;--accent:var(--red)"></i>
+                    </div>
+                    <div class="mini-node green">正确路径<br>被强化</div>
+                  </div>
+                  <div class="rl-row rl-cases" style="--cols:3">
+                    <div class="callout blue">DeepSeek R1<small>检查、回溯、换角度。</small></div>
+                    <div class="callout orange">AlphaGo 第 37 手<small>离开人类分布。</small></div>
+                    <div class="callout green">可验证练习<small>数学、代码、棋局。</small></div>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Sections 17-19</span><span>15 / 17</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="RLHF" data-section="16">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">RLHF</div>
+                <h2 class="slide-title">偏好奖励有用，但不是不可欺骗奖励</h2>
+                <p class="slide-subtitle">不可验证任务靠奖励模型近似人类偏好；RL 太强时会寻找这个近似模型的漏洞。</p>
+              </header>
+              <div class="slide-body">
+                <div class="rl-map">
+                  <div class="loop">
+                    <div class="node blue"><strong>候选回答</strong><small>同一 prompt 采样多种输出</small></div>
+                    <div class="node green"><strong>人类排序</strong><small>判别比从零生成更容易</small></div>
+                    <div class="node orange"><strong>奖励模型</strong><small>学习人类偏好的有损模拟</small></div>
+                    <div class="node red"><strong>有限 RL</strong><small>避免过度利用漏洞</small></div>
+                  </div>
+                  <div class="rl-row rl-cases" style="--cols:3">
+                    <div class="callout green">可验证 RL<small>数学、代码、围棋，奖励更硬。</small></div>
+                    <div class="callout orange">RLHF<small>把偏好任务扩展到诗、笑话、总结。</small></div>
+                    <div class="callout red">奖励漏洞<small>模型会优化评分器，不等于优化真实人类判断。</small></div>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Section 20</span><span>16 / 17</span></footer>
+            </div>
+          </article>
+
+          <article class="slide" data-title="未来与使用" data-section="17">
+            <div class="slide-inner">
+              <header class="slide-head">
+                <div class="eyebrow">Mental Model</div>
+                <h2 class="slide-title">强工具，不是权威</h2>
+                <p class="slide-subtitle">未来模型会更会看、听、行动和记忆；使用时仍要给材料、开工具、查结果。</p>
+              </header>
+              <div class="slide-body">
+                <div class="final-grid">
+                  <div class="score-card orange">
+                    <h3>未来方向</h3>
+                    <div class="future-grid">
+                      <div class="future blue">多模态</div>
+                      <div class="future green">智能体</div>
+                      <div class="future orange">电脑使用</div>
+                      <div class="future violet">长期记忆</div>
+                    </div>
+                  </div>
+                  <div class="score-card green">
+                    <h3>使用方式</h3>
+                    <div class="checklist">
+                      <div class="check blue">给原文</div>
+                      <div class="check green">开工具</div>
+                      <div class="check orange">跑代码</div>
+                      <div class="check red">查结果</div>
+                    </div>
+                    <div class="pill-row green"><span class="pill">人类对最终结果负责</span></div>
+                  </div>
+                </div>
+              </div>
+              <footer class="slide-foot"><span>Sections 22-24</span><span>17 / 17</span></footer>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="bottom">
+      <div class="bottom-left">
+        <button class="ghost-button" id="overviewBottom" type="button">目录 / 总览</button>
+        <span class="hint">快捷键：← → 空格 · G 总览 · F 全屏</span>
+      </div>
+      <div class="progress">
+        <b id="currentNum">1</b>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <span id="totalNum">16</span>
+      </div>
+      <div class="bottom-right">
+        <button class="nav-button" id="prevButton" type="button">上一页</button>
+        <button class="nav-button primary" id="nextButton" type="button">下一页</button>
+      </div>
+    </footer>
+  </div>
+
+  <div class="overview" id="overview" aria-hidden="true">
+    <div class="overview-head">
+      <h2>幻灯片总览</h2>
+      <button class="ghost-button" id="closeOverview" type="button">关闭</button>
+    </div>
+    <div class="thumb-grid" id="thumbGrid"></div>
+  </div>
+
+  <script>
+    const slides = Array.from(document.querySelectorAll(".slide"));
+    const railList = document.getElementById("railList");
+    const thumbGrid = document.getElementById("thumbGrid");
+    const currentNum = document.getElementById("currentNum");
+    const totalNum = document.getElementById("totalNum");
+    const railCount = document.getElementById("railCount");
+    const progressFill = document.getElementById("progressFill");
+    const overview = document.getElementById("overview");
+    let current = 0;
+
+    totalNum.textContent = slides.length;
+    railCount.textContent = slides.length;
+
+    slides.forEach((slide, index) => {
+      const title = slide.dataset.title;
+      const section = String(index + 1).padStart(2, "0");
+
+      const item = document.createElement("button");
+      item.className = "rail-item";
+      item.type = "button";
+      item.innerHTML = `<span>${section}</span><span>${title}</span>`;
+      item.addEventListener("click", () => go(index));
+      railList.appendChild(item);
+
+      const thumb = document.createElement("button");
+      thumb.className = "thumb";
+      thumb.type = "button";
+      thumb.innerHTML = `<div><b>${section}</b><span>${title}</span></div><small>${slide.querySelector(".slide-title").textContent}</small>`;
+      thumb.addEventListener("click", () => {
+        closeOverview();
+        go(index);
+      });
+      thumbGrid.appendChild(thumb);
+    });
+
+    const railItems = Array.from(document.querySelectorAll(".rail-item"));
+    const thumbs = Array.from(document.querySelectorAll(".thumb"));
+
+    function go(index) {
+      current = Math.max(0, Math.min(slides.length - 1, index));
+      slides.forEach((slide, i) => slide.classList.toggle("is-active", i === current));
+      railItems.forEach((item, i) => item.classList.toggle("is-active", i === current));
+      thumbs.forEach((item, i) => item.classList.toggle("is-active", i === current));
+      currentNum.textContent = current + 1;
+      progressFill.style.width = `${((current + 1) / slides.length) * 100}%`;
+      document.title = `${String(current + 1).padStart(2, "0")} · ${slides[current].dataset.title}`;
+      history.replaceState(null, "", `#${current + 1}`);
+    }
+
+    function next() { go(current + 1); }
+    function prev() { go(current - 1); }
+    function openOverview() {
+      overview.classList.add("is-open");
+      overview.setAttribute("aria-hidden", "false");
+    }
+    function closeOverview() {
+      overview.classList.remove("is-open");
+      overview.setAttribute("aria-hidden", "true");
+    }
+    function toggleOverview() {
+      overview.classList.contains("is-open") ? closeOverview() : openOverview();
+    }
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen?.();
+      } else {
+        document.exitFullscreen?.();
+      }
+    }
+
+    document.getElementById("nextButton").addEventListener("click", next);
+    document.getElementById("prevButton").addEventListener("click", prev);
+    document.getElementById("overviewTop").addEventListener("click", openOverview);
+    document.getElementById("overviewBottom").addEventListener("click", openOverview);
+    document.getElementById("closeOverview").addEventListener("click", closeOverview);
+    document.getElementById("fullscreenButton").addEventListener("click", toggleFullscreen);
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowRight" || event.key === " " || event.key === "PageDown") {
+        event.preventDefault();
+        next();
+      }
+      if (event.key === "ArrowLeft" || event.key === "PageUp") {
+        event.preventDefault();
+        prev();
+      }
+      if (event.key === "Home") go(0);
+      if (event.key === "End") go(slides.length - 1);
+      if (event.key.toLowerCase() === "g") toggleOverview();
+      if (event.key.toLowerCase() === "f") toggleFullscreen();
+      if (event.key === "Escape") closeOverview();
+    });
+
+    const fromHash = Number.parseInt(location.hash.replace("#", ""), 10);
+    go(Number.isFinite(fromHash) ? fromHash - 1 : 0);
+  </script>
+</body>
+</html>
